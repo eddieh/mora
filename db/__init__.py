@@ -316,7 +316,7 @@ class ReferenceProperty(db.ReferenceProperty):
 
     if not ((isinstance(self.reference_class, type) and
              issubclass(self.reference_class, Model)) or
-            reference_class is db._SELF_REFERENCE):
+            self.reference_class is db._SELF_REFERENCE):
         raise KindError('reference_class must be Model or _SELF_REFERENCE')
 
     if value is not None and not isinstance(value, self.reference_class):
