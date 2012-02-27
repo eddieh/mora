@@ -314,8 +314,8 @@ class ReferenceProperty(db.ReferenceProperty):
             raise KindError('Property has undefined class type %s' %
                             (self.reference_class))
 
-    if not ((isinstance(reference_class, type) and
-             issubclass(reference_class, Model)) or
+    if not ((isinstance(self.reference_class, type) and
+             issubclass(self.reference_class, Model)) or
             reference_class is db._SELF_REFERENCE):
         raise KindError('reference_class must be Model or _SELF_REFERENCE')
 
@@ -447,6 +447,8 @@ class ModelMixin(object):
                 for x in exclude:
                     properties.remove(x)
         for p in properties:
+            if p[0:1] == "_":
+                continue
             if p in available_properties:
                 p_kind = self.properties()[p]
                 result[p] = p_kind.as_json(self)
@@ -487,6 +489,11 @@ class MoraModel(db.Model, ModelMixin):
             return str(self.key())
         return ""
 
+    # We also add the method class_name to our base model to mirror
+    # the class_name method in Google's PolyModel class.
+    @classmethod
+    def class_name(cls):
+        return cls.kind()
 
 ### MoraPolyModel
 # And we also use our mixin to define Mora's base polymodel.
