@@ -416,7 +416,7 @@ class ListProperty(db.ListProperty):
           item_type = self.item_type
 
       property_type = False
-      if item_type in set([basestring, str, unicode, db.ByteString]):
+      if item_type in set([basestring, str, unicode]):
           property_type = StringProperty
       elif item_type is bool:
           property_type = BooleanProperty
