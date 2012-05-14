@@ -10,3 +10,7 @@ docs/mora.rest.html: rest/__init__.py
 
 docs: docs/mora.db.html docs/mora.rest.html
 	rm docs/__init__.html
+
+.PHONY: test
+test:
+	bin/test.py /opt/local/share/google_appengine . test
