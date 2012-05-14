@@ -15,7 +15,7 @@
 # to make your own RESTful graphs. A RESTful graph API has an
 # organization similar to Facebook's graph api and is a bit
 # different than the default way most other frameworks implement REST.
-# 
+#
 # To get a Student object with Mora you might send a GET request to:
 #
 #     /graph/ag9kZXZ-YmVhbmdyaW5kZXJyCgsSBFVzZXIYAQw
@@ -210,7 +210,9 @@ class RestDispatcher(webapp.RequestHandler):
                 self.action(act, exceptions=True)
             except DispatchError as error:
                 self.response.set_status(error.code)
-                self.response.out.write("Error " + str(error.code))
+                self.response.headers['Content-Type'] = 'application/json'
+                resp = json.dumps({"error":error.message})
+                self.response.out.write(resp)
             return
 
         # We also support a special `_method` argument to change the
@@ -237,6 +239,9 @@ class RestDispatcher(webapp.RequestHandler):
         try:
             model = db.get(key)
         except db.BadKeyError:
+            raise DispatchError(404, "ResourceNotFound")
+
+        if model is None:
             raise DispatchError(404, "ResourceNotFound")
 
         model_name = model.class_name()
@@ -273,17 +278,35 @@ class RestDispatcher(webapp.RequestHandler):
 # The RestHandler is attached to the model, request, and response.
 # You can override the provided `show`, `update` and `delete` methods
 # or create new methods.
+#
+# RestHandler has these properties:
+#   model: the model this handler is for
+#   request: the webapp request object
+#   response: the webapp response object
+#   params: the decoded query string or message body if the
+#           "Content-Type" of the request is
+#           "application/x-www-form-urlencoded" or
+#           "multipart/form-data"
+#   body: the decoded body
 class RestHandler(object):
 
     _mora_verbs = {}
+
+    params = property(lambda: self.request.params)
 
     def __init__(self, model, request, response):
         self.model = model
         self.request = request
         self.response = response
-        self.params = {}
-        for arg in self.request.arguments():
-            self.params[arg] = self.request.get(arg)
+
+    @property
+    def body(self):
+        # TODO: startswith or contains?
+        if self.request.content_type.startswith('application/json'):
+            return json.loads(self.request.body)
+
+        # TODO: decode other media-types
+        return {}
 
     def setup(self):
         pass

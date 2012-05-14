@@ -41,7 +41,9 @@
 # Mora adopts this philoshopy and adds `as_json` to GAE's models *and*
 # types.  If you add new models and types and also add the `as_json`
 # method it will all just work (TM).
-# [julian]: http://jonathanjulian.com/2010/04/rails-to_json-or-as_json/ "Rails to_json or as_json?"
+# [julian]:
+# http://jonathanjulian.com/2010/04/rails-to_json-or-as_json/ "Rails
+# to_json or as_json?"
 # [rails]: http://rubyonrails.org/ "Ruby on Rails"
 # [jsone]: http://docs.python.org/library/json.html "JSON in Python"
 
@@ -52,9 +54,16 @@
 # shoehorn in better per type JSON support but most of this can be
 # accomplished with simple subclassing.
 import logging
+import base64
+import datetime
+import dateutil.parser
+
+from xml.sax import saxutils
 from google.appengine.ext import db
 from google.appengine.ext.db import polymodel
 from google.appengine.api import datastore
+from google.appengine.api import users
+from google.appengine.ext import blobstore
 
 # GAE supports a couple of versions of Python and the GAE environment.
 # We will try to use the latest modules and then use `ImportError`
@@ -73,6 +82,7 @@ except ImportError:
 
 # These remain unchanged so we simply import them into this namespace.
 
+transactional = db.transactional
 Error = db.Error
 BadValueError = db.BadValueError
 BadPropertyError = db.BadPropertyError
@@ -118,6 +128,24 @@ DerivedPropertyError = db.DerivedPropertyError
 Query = db.Query
 get = db.get
 
+
+### Help Function
+
+# As a consequence of allowing string class specifiers for
+# ReferenceProperty and ReverseReferenceProperty we must provide a
+# PolyModel aware replacement for db.class_for_kind. We attempt to
+# handle PolyModels first before falling back on to
+# db.class_for_kind
+def class_for_kind(kind):
+  for t in polymodel._class_map.keys():
+      if kind == t[-1]:
+        return polymodel._class_map[t]
+  try:
+    return db._kind_map[kind]
+  except KeyError:
+    raise KindError('No implementation for kind \'%s\'' % kind)
+
+
 ### Properties
 
 # Since Python is duck-typed, there's really no reason to change the
@@ -130,12 +158,25 @@ Property = db.Property
 # the same name in a different namespace.  This makes them drop-in
 # replacements for the original properties but they also have the new
 # `as_json` method.
+
+# Additionally we add from_json to each property which completes our
+# support for importing and exporting JSON from models.
+
+## Primitive Properties
+
 class StringProperty(db.StringProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return str(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, value)
 
 
 class BooleanProperty(db.BooleanProperty):
@@ -143,104 +184,388 @@ class BooleanProperty(db.BooleanProperty):
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return bool(value)
 
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, value)
 
 class IntegerProperty(db.IntegerProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return long(value)
 
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, value)
 
 class FloatProperty(db.FloatProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return float(value)
 
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, value)
 
 class TextProperty(db.TextProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return str(value)
 
-
-class ByteStringProperty(db.ByteStringProperty):
-
-  def as_json(self, model_instance, value=None):
-    if value is None:
-      value = self.get_value_for_datastore(model_instance)
-    return str(value)
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, value)
 
 
-class EmailProperty(db.EmailProperty):
-
-  def as_json(self, model_instance, value=None):
-    if value is None:
-      value = self.get_value_for_datastore(model_instance)
-    return str(value)
-
-
-class PostalAddressProperty(db.PostalAddressProperty):
-
-  def as_json(self, model_instance, value=None):
-    if value is None:
-      value = self.get_value_for_datastore(model_instance)
-    return str(value)
-
+## Temporal
 
 # There is no standard for date representation in JSON.  We use
 # ISO8601 for representing time which is pretty common.
+
+# JSON.stringify(new Date()) -> 2012-04-06T19:36:35.716Z
+# dateutil.parser.parse("2012-04-06T19:36:35.716Z")
+
 class DateTimeProperty(db.DateTimeProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return value.isoformat("T") + "+00:00"
 
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    if value is not None:
+      value = dateutil.parser.parse(value)
+    setattr(model_instance, attr_name, value)
 
 class DateProperty(db.DateProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return value.isoformat("T") + "+00:00"
 
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    if value is not None:
+      value = dateutil.parser.parse(value)
+      value = value.date()
+    setattr(model_instance, attr_name, value)
 
 class TimeProperty(db.TimeProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return value.isoformat("T") + "+00:00"
 
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    if value is not None:
+      value = dateutil.parser.parse(value)
+      value = value.time()
+    setattr(model_instance, attr_name, value)
 
-class StringListProperty(db.StringListProperty):
+
+## Binary data
+
+class ByteStringProperty(db.ByteStringProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
-    return value
+
+    if value is None: return None
+
+    encoded = base64.urlsafe_b64encode(value)
+    return saxutils.escape(encoded)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, value)
+
+class BlobProperty(db.BlobProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    encoded = base64.urlsafe_b64encode(value)
+    return saxutils.escape(encoded)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, value)
+
+class BlobReferenceProperty(blobstore.BlobReferenceProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      blob_info = getattr(model_instance, self.name)
+
+      if blob_info is None: return None
+
+      return {
+        'id': str(blob_info.key()),
+        'content_type': blob_info.content_type,
+        'creation': blob_info.creation.isoformat("T") + "+00:00",
+        'filename': blob_info.filename,
+        'size': blob_info.size}
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+
+    if value == '': value = None
+
+    # If there is an id in this struct then its output from our
+    # as_json() above.
+    # TODO: use isinstance
+    if type(value) is dict and 'id' in value:
+      setattr(model_instance, attr_name, value['id'])
+    else:
+      setattr(model_instance, attr_name, value)
 
 
+## Special Google Data Protocol, GeoRSS GML Properties, and Atom
+
+# GeoPtProperty
+# A geographical point represented by floating-point latitude and
+# longitude coordinates (Google says: In XML, this is a
+# georss:point element):
+#
+# <gml:Point>
+#   <gml:pos>45.256 -71.92</gml:pos>
+# </gml:Point>
+class GeoPtProperty(db.GeoPtProperty):
+
+  # Return a GeoPt as JSON with the following form:
+  #  {lat: 45.256, -71.92}
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    return {'lat': value.lat, 'lon': value.lon}
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    # TODO: we should handle the single string case: '13.42,42.13'
+    setattr(model_instance, attr_name, GeoPt(value['lat'], value['lon']))
+
+# PostalAddressProperty
+# A postal address. This is a subclass of the built-in unicode type
+# (Google says: In XML, this is a gd:postalAddress element):
+#
+# <gd:postalAddress>
+#   500 West 45th Street
+#   New York, NY 10036
+# </gd:postalAddress>
+class PostalAddressProperty(db.PostalAddressProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    return str(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, PostalAddress(value))
+
+# PhoneNumberProperty
+# A human-readable telephone number. This is a subclass of the
+# built-in unicode type (In XML, this is a gd.phoneNumber
+# element):
+#
+# <gd:phoneNumber>(425) 555-8080 ext. 72585</gd:phoneNumber>
+class PhoneNumberProperty(db.PhoneNumberProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    return str(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, PhoneNumber(value))
+
+# EmailProperty
+# An email address. Neither the property class nor the value class
+# perform validation of email addresses, they just store the
+# value (In XML, this is a gd:email element):
+#
+# <gd:email address="foo@bar.example.com"/>
+class EmailProperty(db.EmailProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    return str(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    if value is None or value == "":
+      #Make sure we can set this value to None.
+      setattr(model_instance, attr_name, None)
+    else:
+      setattr(model_instance, attr_name, Email(value))
+
+# IMProperty
+# An instant messaging handle. protocol is the canonical URL of
+# the instant messaging service. address is the handle's address.
+# In XML, this is a gd:im element:
+#
+# <gd:im protocol="http://schemas.google.com/g/2005#MSN"
+#        address="foo@bar.msn.com"
+#        rel="http://schemas.google.com/g/2005#home"
+#        primary="true"/>
+class IMProperty(db.IMProperty):
+
+  # Return an IM as JSON with the following form:
+  #  {protocol: msn.com, address: 'foo@bar.msn.com'}
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    return {'protocol': value.protocol, 'address': value.address}
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    # TODO: we should handle the single string case: 'http:aim.com dlynch'
+    setattr(model_instance, attr_name,
+            IM(value['protocol'], value['address']))
+
+# LinkProperty
+# A fully qualified URL. This is a subclass of the built-in
+# unicode type. In XML, this is an Atom Link element:
+#
+# <link href="http://www.google.com/" />
+class LinkProperty(db.LinkProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    return str(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, Link(value))
+
+# CategoryProperty
+# A category or "tag". This is a subclass of the built-in unicode
+# type. In XML, this is an Atom Category element:
+#
+# <category term="kittens" />
+class CategoryProperty(db.CategoryProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    return str(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, Category(value))
+
+# RatingProperty
+# A user-provided rating for a piece of content, as an integer
+# between 0 and 100. This is a subclass of the built-in long
+# type. The class validates that the value is an integer between 0
+# and 100, and raises a BadValueError if the value is invalid.
+# In XML, this is a gd:rating element:
+#
+# <gd:rating value="4" />
+class RatingProperty(db.RatingProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
+    return long(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, Rating(value))
+
+## Special User Property
+
+# UserProperty
+# A user with a Google account. A User value in the datastore does
+# not get updated if the user changes her email address. This may
+# be remedied in a future release. Until then, you can use the
+# User value's user_id() as the user's stable unique identifier.
+# nickname()
+# email()
+# user_id()
+# federated_identity()
+# federated_provider()
 class UserProperty(db.UserProperty):
 
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
-    if value is None:
-      return {}
-    else:
-      return {"nickname": value.nickname(),
-              "email": value.email(),
-              "user_id": value.user_id(),
-              "federated_identity": value.federated_identity(),
-              "federated_provider": value.federated_provider()}
+
+    if value is None: return None
+
+    return {"nickname": value.nickname(),
+            "email": value.email(),
+            "user_id": value.user_id(),
+            "federated_identity": value.federated_identity(),
+            "federated_provider": value.federated_provider()}
+
+  # def from_json(self, model_instance, value, attr_name=None):
+  #   if attr_name is None: attr_name = self.name
+  #   setattr(model_instance, attr_name, value)
+
 
 ### ReferenceProperty
 
@@ -291,6 +616,9 @@ class ReferenceProperty(db.ReferenceProperty):
     if isinstance(value, datastore.Key):
       return value
 
+    if isinstance(value, str):
+      return datastore.Key(value)
+
     if value is not None and not value.has_key():
       raise BadValueError(
           '%s instance must have a complete key before it can be stored as a '
@@ -299,11 +627,11 @@ class ReferenceProperty(db.ReferenceProperty):
     value = super(db.ReferenceProperty, self).validate(value)
 
     if isinstance(self.reference_class, basestring):
-        if self.reference_class in db._kind_map:
-            self.reference_class = db._kind_map[self.reference_class]
-        else:
-            raise KindError('Property has undefined class type %s' %
-                            (self.reference_class))
+      try:
+        self.reference_class = class_for_kind(self.reference_class)
+      except KindError:
+        raise KindError('Property has undefined class type %s' %
+                        (self.reference_class))
 
     if not ((isinstance(self.reference_class, type) and
              issubclass(self.reference_class, Model)) or
@@ -319,7 +647,22 @@ class ReferenceProperty(db.ReferenceProperty):
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return None
+
     return str(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    if value is None:
+      setattr(model_instance, attr_name, None)
+    elif type(value) is dict and 'id' in value:
+      #If there is an id in this struct then we know what you meant.
+      # TODO: use isinstance
+      setattr(model_instance, attr_name, Key(value['id']))
+    else:
+      setattr(model_instance, attr_name, Key(value))
+
 
 ### ReverseReferenceProperty
 
@@ -327,19 +670,29 @@ class ReferenceProperty(db.ReferenceProperty):
 # themselves are pretty useful and so we make this class public and
 # add support for string reference class specifiers.
 #
+# We've also added a polymorphic option that limits the collection of
+# model instances returned to the specified model and its descendants.
+# The original code counterintuitively returns siblings of the
+# specified model along with descendants.
+#
 # Note that we derive ReverseReferenceProperty from object to avoid
 # being detected as a property. The original code avoids this by
 # binding the property later.
 class ReverseReferenceProperty(object):
-    
-  def __init__(self, model, prop):
+
+  def __init__(self,
+               model,
+               prop,
+               polymorphic=None):
     self.__model = model
     self.__property = prop
+    self.__polymorphic = polymorphic
 
   @property
   def _model(self):
+    """Internal helper to access the model class, read-only."""
     if isinstance(self.__model, basestring):
-      self.__model = db.class_for_kind(self.__model)
+        self.__model = class_for_kind(self.__model)
     return self.__model
 
   @property
@@ -347,15 +700,46 @@ class ReverseReferenceProperty(object):
     """Internal helper to access the property name, read-only."""
     return self.__property
 
+  @property
+  def _polymorphic(self):
+    """Internal helper to access polymorphic option, read-only."""
+    return self.__polymorphic
+
   def __get__(self, model_instance, model_class):
     if model_instance is not None:
       query = Query(self._model)
-      return query.filter(self.__property + ' =', model_instance.key())
+      query.filter(self._prop_name + ' =', model_instance.key())
+      if self._polymorphic is not None:
+        query.filter(polymodel._CLASS_KEY_PROPERTY + ' =',
+                     self._model.class_name())
+      return query
     else:
       return self
 
   def __property_config__(self, model_class, attr_name):
       pass
+
+### SelfReferenceProperty
+#Always points to the model_instance that contains this reference.
+
+class SelfReferenceProperty(db.Property):
+
+  def __set__(self, *args):
+      raise db.DerivedPropertyError(
+          'SelfReference property %s cannot be set.' % self.name)
+
+  def __get__(self, model_instance, model_class):
+      if model_instance is None:
+          return self
+      return model_instance.id
+
+  def as_json(self, model_instance):
+      value = self.__get__(model_instance, None)
+      return str(value)
+
+  def from_json(self, model_instance, value, attr_name=None):
+      pass
+
 
 ### Computed Properties
 
@@ -387,6 +771,9 @@ class ComputedProperty(db.Property):
       value = self.__get__(model_instance, None)
       return self._kind.as_json(model_instance, value=value)
 
+  def from_json(self, model_instance, value, attr_name=None):
+      pass
+
 # We use a decorator class to return a `ComputedProperty`.  Python's
 # documentation on how this sort of thing works is a bit weak but
 # Bruce Eckel has put together a nice [decorator tutorial][eckel] that
@@ -399,7 +786,76 @@ class computed_property(object):
     self.indexed = indexed
 
   def __call__(self, f, *args):
-    return ComputedProperty(f, *args, kind=self.kind, name=f.func_name, indexed=self.indexed)
+    return ComputedProperty(f,
+                            *args,
+                            kind=self.kind,
+                            name=f.func_name,
+                            indexed=self.indexed)
+
+
+## Lists
+
+class StringListProperty(db.StringListProperty):
+
+  def as_json(self, model_instance, value=None):
+    if value is None:
+      value = self.get_value_for_datastore(model_instance)
+
+    if value is None: return []
+
+    return value
+
+  def from_json(self, model_instance, value, attr_name=None):
+    if attr_name is None: attr_name = self.name
+    setattr(model_instance, attr_name, value)
+
+def property_class_for_item_type(item_type):
+    property_type = False
+
+    if item_type in set([basestring, str, unicode]):
+        property_type = StringProperty
+    elif item_type is bool:
+        property_type = BooleanProperty
+    elif item_type == (int, long):
+        property_type = IntegerProperty
+    elif item_type is float:
+        property_type = FloatProperty
+    elif item_type is Key:
+        property_type = ReferenceProperty
+    elif item_type is datetime.datetime:
+        property_type = DateTimeProperty
+    elif item_type is datetime.date:
+        property_type = DateProperty
+    elif item_type is datetime.time:
+        property_type = TimeProperty
+    elif item_type is Text:
+        property_type = TextProperty
+    elif item_type is ByteString:
+        property_type = ByteStringProperty
+    elif item_type is users.User:
+        property_type = UserProperty
+    elif item_type is Email:
+        property_type = EmailProperty
+    elif item_type is Blob:
+        property_type = BlobProperty
+    elif item_type is BlobKey:
+        property_type = BlobReferenceProperty
+    elif item_type is Category:
+        property_type = CategoryProperty
+    elif item_type is Link:
+        property_type = LinkProperty
+    elif item_type is GeoPt:
+        property_type = GeoPtProperty
+    elif item_type is IM:
+        property_type = IMProperty
+    elif item_type is PhoneNumber:
+        property_type = PhoneNumberProperty
+    elif item_type is PostalAddress:
+        property_type = PostalAddressProperty
+    elif item_type is Rating:
+        property_type = RatingProperty
+
+    return property_type
 
 
 class ListProperty(db.ListProperty):
@@ -410,47 +866,14 @@ class ListProperty(db.ListProperty):
       if value is None:
           value = self.get_value_for_datastore(model_instance)
 
+      if value is None: return []
+
       if self.item_type in (int, long):
           item_type = (int, long)
       else:
           item_type = self.item_type
 
-      property_type = False
-      if item_type in set([basestring, str, unicode]):
-          property_type = StringProperty
-      elif item_type is bool:
-          property_type = BooleanProperty
-      elif item_type in set([int, long]):
-          property_type = IntegerProperty
-      elif item_type is float:
-          property_type = FloatProperty
-      elif item_type is Key:
-          property_type = ReferenceProperty
-      elif item_type is datetime.datetime:
-          property_type = DateTimeProperty
-      elif item_type is datetime.date:
-          property_type = DateProperty
-      elif item_type is datetime.time:
-          property_type = TimeProperty
-      elif item_type is Text:
-          property_type = TextProperty
-      elif item_type is ByteString:
-          property_type = ByteStringProperty
-      elif item_type is user.User:
-          property_type = UserProperty
-      elif item_type is Email:
-          property_type = EmailProperty
-      # TODO: Blob
-      # TODO: BlobKey
-      # TODO: Category
-      # TODO: Link
-      # TODO: GeoPt
-      # TODO: IM
-      # TODO: PhoneNumber
-      # TODO: PostalAddress
-      # TODO: Rating
-      # TODO: BlobKey
-
+      property_type = property_class_for_item_type(item_type)
       property_type = property_type()
 
       for i in value:
@@ -458,6 +881,27 @@ class ListProperty(db.ListProperty):
 
       return result
 
+  def from_json(self, model_instance, value, attr_name=None):
+      if attr_name is None: attr_name = self.name
+
+      data = []
+
+      if self.item_type in (int, long):
+          item_type = (int, long)
+      else:
+          item_type = self.item_type
+
+      property_type = property_class_for_item_type(item_type)
+      property_type = property_type()
+
+      for i in value:
+          class Tmp():
+              value = None
+          obj = Tmp()
+          property_type.from_json(obj, i, 'value')
+          data.append(obj.value)
+
+      setattr(model_instance, attr_name, data)
 
 ### Models
 
@@ -476,8 +920,11 @@ class ModelMixin(object):
         return json.dumps(obj)
 
     def _to_json(self, options={}, include=None, exclude=None):
-        return json.dumps(self.as_json(options=options, include=include, exclude=exclude))
+        return json.dumps(self.as_json(options=options,
+                                       include=include,
+                                       exclude=exclude))
 
+    # This returns representation of the model as a JSON string.
     def to_json(self, options={}, include=None, exclude=None):
         return self._to_json(options, include, exclude)
 
@@ -506,6 +953,9 @@ class ModelMixin(object):
     # Since overriding `as_json` is pretty common and calling super
     # class methods is a pain in Python, we put the core behavior in
     # `_as_json`.
+    #
+    # This builds a representation of the model as a Python 'dict' that
+    # can be converted to JSON.
     def as_json(self, options={}, include=None, exclude=None):
         return self._as_json(options, include, exclude)
 
@@ -522,11 +972,13 @@ class ModelMixin(object):
         for p in properties:
             if p in available_properties:
                 if p in data:
-                    setattr(self, p, data[p])
+                    p_kind = self.properties()[p]
+                    p_kind.from_json(self, data[p])
         self.put()
 
     def from_json(self, data, options={}, include=None, exclude=None):
         return self._from_json(data, options, include, exclude)
+
 
 ### MoraModel
 # We use our mixin to define Mora's base model.
@@ -544,6 +996,11 @@ class MoraModel(db.Model, ModelMixin):
     def class_name(cls):
         return cls.kind()
 
+
+# TODO: Do we need to replicate the App Engine PolyModel code with its
+# metaclass voodoo or is there a simpler way to have kind() behave
+# like it does for a vanilla App Engine PolyModel?
+
 ### MoraPolyModel
 # And we also use our mixin to define Mora's base polymodel.
 class MoraPolyModel(polymodel.PolyModel, ModelMixin):
@@ -554,8 +1011,13 @@ class MoraPolyModel(polymodel.PolyModel, ModelMixin):
             return str(self.key())
         return ""
 
+    # We also add the method class_name here to mirror the class_name
+    # method in Google's PolyModel class.
+    @classmethod
+    def class_name(cls):
+        return cls.__name__
+
 
 def create(model):
     _class = db.class_for_kind(model)
     return _class()
-
