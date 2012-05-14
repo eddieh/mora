@@ -719,26 +719,19 @@ class ReverseReferenceProperty(object):
   def __property_config__(self, model_class, attr_name):
       pass
 
+
 ### SelfReferenceProperty
-#Always points to the model_instance that contains this reference.
-
-class SelfReferenceProperty(db.Property):
-
-  def __set__(self, *args):
-      raise db.DerivedPropertyError(
-          'SelfReference property %s cannot be set.' % self.name)
-
-  def __get__(self, model_instance, model_class):
-      if model_instance is None:
-          return self
-      return model_instance.id
-
-  def as_json(self, model_instance):
-      value = self.__get__(model_instance, None)
-      return str(value)
-
-  def from_json(self, model_instance, value, attr_name=None):
-      pass
+def SelfReferenceProperty(verbose_name=None, **attrs):
+    if 'reference_class' in attrs:
+        raise ConfigurationError(
+            'Do not provide reference_class to self-reference.')
+    if 'collection_name' in attrs:
+        raise ConfigurationError(
+            'Do not provide collection_name to self-reference'
+            ' when using Mora.')
+    return ReferenceProperty(db._SELF_REFERENCE,
+                             verbose_name,
+                             **attrs)
 
 
 ### Computed Properties
