@@ -13,4 +13,4 @@ docs: docs/mora.db.html docs/mora.rest.html
 
 .PHONY: test
 test:
-	bin/test.py /opt/local/share/google_appengine mora test
+	bin/test.py /opt/local/share/google_appengine mora tests
