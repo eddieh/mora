@@ -675,6 +675,11 @@ class ReferenceProperty(db.ReferenceProperty):
 # The original code counterintuitively returns siblings of the
 # specified model along with descendants.
 #
+# We support Rails style 'has_many :through' associations that specify
+# a many-to-many relationship 'through' an intermidiate model. To
+# setup this relationship using a ReverseReferenceProperty both
+# 'through' and 'through_prop' options must passed in.
+#
 # Note that we derive ReverseReferenceProperty from object to avoid
 # being detected as a property. The original code avoids this by
 # binding the property later.
@@ -683,15 +688,27 @@ class ReverseReferenceProperty(object):
   def __init__(self,
                model,
                prop,
-               polymorphic=None):
+               polymorphic=None,
+               through=None,
+               through_prop=None):
     self.__model = model
     self.__property = prop
     self.__polymorphic = polymorphic
+    self.__through = through
+    self.__through_property = through_prop
+
+    if self.__through and not self.__through_property:
+        raise ConfigurationError(
+            'You must provide through_prop with through.')
+    if self.__through_property and not self.__through:
+        raise ConfigurationError(
+            'You must provide through with through_prop.')
 
   @property
   def _model(self):
     """Internal helper to access the model class, read-only."""
     if isinstance(self.__model, basestring):
+        # resolve and cache the class
         self.__model = class_for_kind(self.__model)
     return self.__model
 
@@ -705,16 +722,50 @@ class ReverseReferenceProperty(object):
     """Internal helper to access polymorphic option, read-only."""
     return self.__polymorphic
 
+  @property
+  def _through(self):
+    """Internal helper to access the through model class, read-only."""
+    if isinstance(self.__through, basestring):
+        # resolve and cache the class
+        self.__through = class_for_kind(self.__through)
+    return self.__through
+
+  @property
+  def _through_property_name(self):
+    """Internal helper to access the property2 name, read-only."""
+    return self.__through_property
+
   def __get__(self, model_instance, model_class):
-    if model_instance is not None:
+    if model_instance is None:
+        return self
+
+    if self._through:
+        # TODO: projections are significantly faster than normal
+        # queries, but requrie the latest version of App Engine
+        #query = Query(self._through,
+        #              projection=(self._through_property_name))
+
+        # get the keys for the collection we're retrieving
+        query1 = Query(self._through)
+        query1.filter(self._prop_name + ' =', model_instance.key())
+        keys = map(lambda entity:
+                       getattr(entity, self._through_property_name).key(),
+                   query1)
+
+        # build the actual query for this collection
+        query2 = Query(self._model)
+        query2.filter('__key__ IN', keys)
+        if self._polymorphic is not None:
+            query2.filter(polymodel._CLASS_KEY_PROPERTY + ' =',
+                          self._model.class_name())
+        return query2
+    else:
       query = Query(self._model)
       query.filter(self._prop_name + ' =', model_instance.key())
       if self._polymorphic is not None:
         query.filter(polymodel._CLASS_KEY_PROPERTY + ' =',
                      self._model.class_name())
       return query
-    else:
-      return self
 
   def __property_config__(self, model_class, attr_name):
       pass
