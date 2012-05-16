@@ -3,26 +3,6 @@ import unittest
 import db
 from google.appengine.ext import testbed
 
-
-class User(db.MoraModel):
-    name = db.StringProperty()
-    courses = db.ReverseReferenceProperty('Course',
-                                          'user',
-                                          through='CourseMembership',
-                                          through_prop='course')
-
-class Course(db.MoraModel):
-    name = db.StringProperty()
-    users = db.ReverseReferenceProperty('User',
-                                        'course',
-                                        through='CourseMembership',
-                                        through_prop='user')
-
-class CourseMembership(db.MoraModel):
-    user = db.ReferenceProperty('User')
-    course = db.ReferenceProperty('Course')
-
-
 class ManyToManyTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -39,7 +19,7 @@ class ManyToManyTestCase(unittest.TestCase):
     def tearDown(self):
         self.testbed.deactivate()
 
-    def test_many_to_many_configuration_error(self):
+    def test_configuration_error(self):
         with self.assertRaises(db.ConfigurationError):
             class A(db.MoraModel):
                 reverse_ref = db.ReverseReferenceProperty(
@@ -54,7 +34,27 @@ class ManyToManyTestCase(unittest.TestCase):
                     'course',
                     through_prop='user')
 
-    def test_many_to_many_reverse_reference(self):
+    def test_reverse_reference(self):
+        class User(db.MoraModel):
+            name = db.StringProperty()
+            courses = db.ReverseReferenceProperty(
+                'Course',
+                'user',
+                through='CourseMembership',
+                through_prop='course')
+
+        class Course(db.MoraModel):
+            name = db.StringProperty()
+            users = db.ReverseReferenceProperty(
+                'User',
+                'course',
+                through='CourseMembership',
+                through_prop='user')
+
+        class CourseMembership(db.MoraModel):
+            user = db.ReferenceProperty('User')
+            course = db.ReferenceProperty('Course')
+
         user1 = User(name='Eddie')
         user1.save()
         user2 = User(name='Sharon')
@@ -98,3 +98,42 @@ class ManyToManyTestCase(unittest.TestCase):
         self.assertEqual(course2_users[0].name, 'Eddie')
         self.assertEqual(course2_users[1].name, 'Sharon')
         self.assertEqual(course2_users[2].name, 'Bob')
+
+    def test_with_filter_function(self):
+        class User(db.MoraModel):
+            name = db.StringProperty()
+            courses = db.ReverseReferenceProperty(
+                'Course',
+                'user',
+                through='CourseMembership',
+                through_prop='course',
+                filter_function=lambda query:
+                    query.filter('active =', True))
+
+        class Course(db.MoraModel):
+            name = db.StringProperty()
+            users = db.ReverseReferenceProperty(
+                'User',
+                'course',
+                through='CourseMembership',
+                through_prop='user')
+
+        class CourseMembership(db.MoraModel):
+            user = db.ReferenceProperty('User')
+            course = db.ReferenceProperty('Course')
+            active = db.BooleanProperty()
+
+        user1 = User(name='Eddie')
+        user1.save()
+
+        course1 = Course(name='CS 126')
+        course1.save()
+        course2 = Course(name='CS 136')
+        course2.save()
+
+        CourseMembership(user=user1, course=course1, active=False).save()
+        CourseMembership(user=user1, course=course2, active=True).save()
+
+        user1_courses = user1.courses.fetch(10)
+        self.assertEqual(len(user1_courses), 1)
+        self.assertEqual(user1_courses[0].name, 'CS 136')

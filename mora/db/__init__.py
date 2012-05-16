@@ -678,7 +678,11 @@ class ReferenceProperty(db.ReferenceProperty):
 # We support Rails style 'has_many :through' associations that specify
 # a many-to-many relationship 'through' an intermidiate model. To
 # setup this relationship using a ReverseReferenceProperty both
-# 'through' and 'through_prop' options must passed in.
+# 'through' and 'through_prop' options must be passed in.
+#
+# Optionally, a filter function can be provided that takes a query and
+# returns a query. This allows the query to be modified in arbitrary
+# ways.
 #
 # Note that we derive ReverseReferenceProperty from object to avoid
 # being detected as a property. The original code avoids this by
@@ -690,12 +694,14 @@ class ReverseReferenceProperty(object):
                prop,
                polymorphic=None,
                through=None,
-               through_prop=None):
+               through_prop=None,
+               filter_function=None):
     self.__model = model
     self.__property = prop
     self.__polymorphic = polymorphic
     self.__through = through
     self.__through_property = through_prop
+    self.__filter_function = filter_function
 
     if self.__through and not self.__through_property:
         raise ConfigurationError(
@@ -732,8 +738,13 @@ class ReverseReferenceProperty(object):
 
   @property
   def _through_property_name(self):
-    """Internal helper to access the property2 name, read-only."""
+    """Internal helper to access the through property name, read-only."""
     return self.__through_property
+
+  @property
+  def _filter_function(self):
+      """Internal helper to access the filter function, read-only."""
+      return self.__filter_function
 
   def __get__(self, model_instance, model_class):
     if model_instance is None:
@@ -748,6 +759,12 @@ class ReverseReferenceProperty(object):
         # get the keys for the collection we're retrieving
         query1 = Query(self._through)
         query1.filter(self._prop_name + ' =', model_instance.key())
+
+        # allow the property definition a chance to specify additional
+        # constraints
+        if self._filter_function:
+            query1 = self._filter_function(query1)
+
         keys = map(lambda entity:
                        getattr(entity, self._through_property_name).key(),
                    query1)
@@ -762,6 +779,12 @@ class ReverseReferenceProperty(object):
     else:
       query = Query(self._model)
       query.filter(self._prop_name + ' =', model_instance.key())
+
+      # allow the property definition a chance to specify additional
+      # constraints
+      if self._filter_function:
+          query = self._filter_function(query)
+
       if self._polymorphic is not None:
         query.filter(polymodel._CLASS_KEY_PROPERTY + ' =',
                      self._model.class_name())
