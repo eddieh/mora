@@ -56,7 +56,7 @@
 import logging
 import base64
 import datetime
-import dateutil.parser
+import iso8601
 
 from xml.sax import saxutils
 from google.appengine.ext import db
@@ -242,7 +242,7 @@ class TextProperty(db.TextProperty):
 # ISO8601 for representing time which is pretty common.
 
 # JSON.stringify(new Date()) -> 2012-04-06T19:36:35.716Z
-# dateutil.parser.parse("2012-04-06T19:36:35.716Z")
+# iso8601.parse_date("2012-04-06T19:36:35.716Z")
 
 class DateTimeProperty(db.DateTimeProperty):
 
@@ -257,7 +257,7 @@ class DateTimeProperty(db.DateTimeProperty):
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
     if value is not None:
-      value = dateutil.parser.parse(value)
+      value = iso8601.parse_date(value)
     setattr(model_instance, attr_name, value)
 
 class DateProperty(db.DateProperty):
@@ -273,7 +273,7 @@ class DateProperty(db.DateProperty):
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
     if value is not None:
-      value = dateutil.parser.parse(value)
+      value = iso8601.parse_date(value)
       value = value.date()
     setattr(model_instance, attr_name, value)
 
@@ -290,7 +290,7 @@ class TimeProperty(db.TimeProperty):
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
     if value is not None:
-      value = dateutil.parser.parse(value)
+      value = iso8601.parse_date(value)
       value = value.time()
     setattr(model_instance, attr_name, value)
 

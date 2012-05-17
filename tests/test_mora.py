@@ -1,6 +1,6 @@
 import unittest
 import datetime
-import dateutil
+import iso8601
 
 import db
 from google.appengine.api import users
@@ -306,7 +306,7 @@ class MoraFromJSONTestCase(unittest.TestCase):
         self.assertEqual(widget.date, datetime.date(1983, 4, 5))
         self.assertEqual(widget.time, datetime.time(19, 36, 35, 716000))
         self.assertEqual(widget.datetime,
-                         dateutil.parser.parse('1983-04-05T19:36:35.716Z'))
+                         iso8601.parse_date('1983-04-05T19:36:35.716Z'))
 
         self.assertEqual(widget.byte_str, 'aaabbbbaaa')
         self.assertEqual(widget.blob, 'blobbbbbbbbbbbbbbbbbbbbbb')
