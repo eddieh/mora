@@ -675,11 +675,6 @@ class ReferenceProperty(db.ReferenceProperty):
 # The original code counterintuitively returns siblings of the
 # specified model along with descendants.
 #
-# We support Rails style 'has_many :through' associations that specify
-# a many-to-many relationship 'through' an intermidiate model. To
-# setup this relationship using a ReverseReferenceProperty both
-# 'through' and 'through_prop' options must be passed in.
-#
 # Optionally, a filter function can be provided that takes a query and
 # returns a query. This allows the query to be modified in arbitrary
 # ways.
@@ -693,22 +688,11 @@ class ReverseReferenceProperty(object):
                model,
                prop,
                polymorphic=None,
-               through=None,
-               through_prop=None,
                filter_function=None):
     self.__model = model
     self.__property = prop
     self.__polymorphic = polymorphic
-    self.__through = through
-    self.__through_property = through_prop
     self.__filter_function = filter_function
-
-    if self.__through and not self.__through_property:
-        raise ConfigurationError(
-            'You must provide through_prop with through.')
-    if self.__through_property and not self.__through:
-        raise ConfigurationError(
-            'You must provide through with through_prop.')
 
   @property
   def _model(self):
@@ -729,19 +713,6 @@ class ReverseReferenceProperty(object):
     return self.__polymorphic
 
   @property
-  def _through(self):
-    """Internal helper to access the through model class, read-only."""
-    if isinstance(self.__through, basestring):
-        # resolve and cache the class
-        self.__through = class_for_kind(self.__through)
-    return self.__through
-
-  @property
-  def _through_property_name(self):
-    """Internal helper to access the through property name, read-only."""
-    return self.__through_property
-
-  @property
   def _filter_function(self):
       """Internal helper to access the filter function, read-only."""
       return self.__filter_function
@@ -750,45 +721,18 @@ class ReverseReferenceProperty(object):
     if model_instance is None:
         return self
 
-    if self._through:
-        # TODO: projections are significantly faster than normal
-        # queries, but requrie the latest version of App Engine
-        #query = Query(self._through,
-        #              projection=(self._through_property_name))
+    query = Query(self._model)
+    query.filter(self._prop_name + ' =', model_instance.key())
 
-        # get the keys for the collection we're retrieving
-        query1 = Query(self._through)
-        query1.filter(self._prop_name + ' =', model_instance.key())
+    # allow the property definition a chance to specify additional
+    # constraints
+    if self._filter_function:
+        query = self._filter_function(query)
 
-        # allow the property definition a chance to specify additional
-        # constraints
-        if self._filter_function:
-            query1 = self._filter_function(query1)
-
-        keys = map(lambda entity:
-                       getattr(entity, self._through_property_name).key(),
-                   query1)
-
-        # build the actual query for this collection
-        query2 = Query(self._model)
-        query2.filter('__key__ IN', keys)
-        if self._polymorphic is not None:
-            query2.filter(polymodel._CLASS_KEY_PROPERTY + ' =',
-                          self._model.class_name())
-        return query2
-    else:
-      query = Query(self._model)
-      query.filter(self._prop_name + ' =', model_instance.key())
-
-      # allow the property definition a chance to specify additional
-      # constraints
-      if self._filter_function:
-          query = self._filter_function(query)
-
-      if self._polymorphic is not None:
-        query.filter(polymodel._CLASS_KEY_PROPERTY + ' =',
-                     self._model.class_name())
-      return query
+    if self._polymorphic is not None:
+      query.filter(polymodel._CLASS_KEY_PROPERTY + ' =',
+                   self._model.class_name())
+    return query
 
   def __property_config__(self, model_class, attr_name):
       pass
