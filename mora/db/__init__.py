@@ -56,7 +56,10 @@
 import logging
 import base64
 import datetime
-import iso8601
+try:
+    import iso8601
+except ImportError:
+    from mora import iso8601
 
 from xml.sax import saxutils
 from google.appengine.ext import db
