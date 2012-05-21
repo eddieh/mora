@@ -292,7 +292,7 @@ class RestHandler(object):
 
     _mora_verbs = {}
 
-    params = property(lambda: self.request.params)
+    params = property(lambda self: self.request.params)
 
     def __init__(self, model, request, response):
         self.model = model
