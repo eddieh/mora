@@ -328,6 +328,10 @@ class MoraFromJSONTestCase(unittest.TestCase):
         self.assertEqual(widget.str_list, ['a', 'b', 'c'])
 
 
+        widget.from_json({
+                'bool_': True})
+        self.assertEqual(widget.bool_, True)
+
 class MoraToJSONTestCase(unittest.TestCase):
 
     def setUp(self):

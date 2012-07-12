@@ -155,7 +155,11 @@ class RestDispatcher(webapp.RequestHandler):
     @classmethod
     def connect(cls, rest_handler):
         model = rest_handler.model
-        cls.rest_handlers[model.class_name()] = rest_handler
+        if hasattr(model, '__iter__'):
+            for m in model:
+                cls.rest_handler[m.class_name()] = rest_handler
+        else:
+            cls.rest_handlers[model.class_name()] = rest_handler
 
         verbs = {}
         # When we connect RestHandler subclasses to this class we also
@@ -164,14 +168,14 @@ class RestDispatcher(webapp.RequestHandler):
         for k, v in inspect.getmembers(rest_handler):
             if hasattr(v, "_mora_verb"):
                 verbs.update([getattr(v, "_mora_verb")])
-        logging.info(verbs)
+        #logging.info(verbs)
 
         # We also include the standard rest methods.
         verbs.update({"GET __self__": "show",
                       "DELETE __self__": "destroy",
                       "PUT __self__": "update"})
 
-        logging.info(verbs)
+        #logging.info(verbs)
         # We then attach this list of actions to the class.
         setattr(rest_handler, "_mora_verbs", verbs)
 
@@ -270,7 +274,7 @@ class RestDispatcher(webapp.RequestHandler):
             action_method = rest_handler._mora_verbs[action_key]
             result = getattr(rest_handler, action_method)()
         else:
-            logging.info(action_key)
+            #logging.info(action_key)
             raise DispatchError(405, "UnsupportedHttpVerb")
 
 ### RestHandler
