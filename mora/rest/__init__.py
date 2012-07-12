@@ -157,7 +157,7 @@ class RestDispatcher(webapp.RequestHandler):
         model = rest_handler.model
         if hasattr(model, '__iter__'):
             for m in model:
-                cls.rest_handler[m.class_name()] = rest_handler
+                cls.rest_handlers[m.class_name()] = rest_handler
         else:
             cls.rest_handlers[model.class_name()] = rest_handler
 
