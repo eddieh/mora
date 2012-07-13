@@ -1029,6 +1029,6 @@ class MoraPolyModel(polymodel.PolyModel, ModelMixin):
         return cls.__name__
 
 
-def create(model):
+def create(model, **kwds):
     _class = class_for_kind(model)
-    return _class()
+    return _class(**kwds)
