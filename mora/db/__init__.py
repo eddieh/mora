@@ -129,7 +129,7 @@ Query = db.Query
 get = db.get
 
 
-### Help Function
+### Help Functions
 
 # As a consequence of allowing string class specifiers for
 # ReferenceProperty and ReverseReferenceProperty we must provide a
@@ -144,6 +144,13 @@ def class_for_kind(kind):
     return db._kind_map[kind]
   except KeyError:
     raise KindError('No implementation for kind \'%s\'' % kind)
+
+def class_for_model(model):
+    return class_for_kind(model.class_name())
+
+def create(kind, **kwds):
+    _class = class_for_kind(kind)
+    return _class(**kwds)
 
 
 ### Properties
@@ -1027,8 +1034,3 @@ class MoraPolyModel(polymodel.PolyModel, ModelMixin):
     @classmethod
     def class_name(cls):
         return cls.__name__
-
-
-def create(model, **kwds):
-    _class = class_for_kind(model)
-    return _class(**kwds)
