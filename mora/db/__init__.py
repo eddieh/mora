@@ -978,7 +978,7 @@ class ModelMixin(object):
         return self._as_json(options, include, exclude)
 
     # Likewise we can extract a representation from json. TODO.
-    def _from_json(self, data, options={}, include=None, exclude=None):
+    def _from_json(self, data, options={}, include=None, exclude=None, save=True):
         available_properties = self.properties()
         if include:
             properties = include
@@ -992,10 +992,10 @@ class ModelMixin(object):
                 if p in data:
                     p_kind = self.properties()[p]
                     p_kind.from_json(self, data[p])
-        self.put()
+        if save: self.put()
 
-    def from_json(self, data, options={}, include=None, exclude=None):
-        return self._from_json(data, options, include, exclude)
+    def from_json(self, data, options={}, include=None, exclude=None, save=True):
+        return self._from_json(data, options, include, exclude, save)
 
 
 ### MoraModel
