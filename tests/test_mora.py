@@ -173,8 +173,8 @@ class MoraAsJSONTestCase(unittest.TestCase):
         self.assertIsInstance(widgetDict['int_'], long)
         self.assertIsInstance(widgetDict['float_'], float)
         self.assertIsInstance(widgetDict['bool_'], bool)
-        self.assertIsInstance(widgetDict['str_'], str)
-        self.assertIsInstance(widgetDict['text'], str)
+        self.assertIsInstance(widgetDict['str_'], basestring)
+        self.assertIsInstance(widgetDict['text'], basestring)
 
         self.assertEqual(widgetDict['int_'], 13)
         self.assertEqual(widgetDict['float_'], 1.3)
@@ -183,18 +183,18 @@ class MoraAsJSONTestCase(unittest.TestCase):
         self.assertEqual(widgetDict['text'], 'word word word')
 
         # temporal
-        self.assertIsInstance(widgetDict['date'], str)
-        self.assertIsInstance(widgetDict['time'], str)
-        self.assertIsInstance(widgetDict['datetime'], str)
+        self.assertIsInstance(widgetDict['date'], basestring)
+        self.assertIsInstance(widgetDict['time'], basestring)
+        self.assertIsInstance(widgetDict['datetime'], basestring)
 
         self.assertEqual(widgetDict['date'], '1983-10-11T00:00:00+00:00')
         self.assertEqual(widgetDict['time'], '1970-01-01T01:00:00+00:00')
         self.assertEqual(widgetDict['datetime'], '1983-10-11T00:00:00+00:00')
 
         # binary data
-        self.assertIsInstance(widgetDict['byte_str'], str)
-        self.assertIsInstance(widgetDict['blob'], str)
-        #self.assertIsInstance(widgetDict['blob_ref'], str)
+        self.assertIsInstance(widgetDict['byte_str'], basestring)
+        self.assertIsInstance(widgetDict['blob'], basestring)
+        #self.assertIsInstance(widgetDict['blob_ref'], basestring)
 
         self.assertEqual(widgetDict['byte_str'], 'd29yZA==')
         self.assertEqual(widgetDict['blob'], 'YmxvYndvcmQ=')
@@ -202,12 +202,12 @@ class MoraAsJSONTestCase(unittest.TestCase):
 
         # special properties
         self.assertIsInstance(widgetDict['geopt'], dict)
-        self.assertIsInstance(widgetDict['address'], str)
-        self.assertIsInstance(widgetDict['phone'], str)
-        self.assertIsInstance(widgetDict['email'], str)
+        self.assertIsInstance(widgetDict['address'], basestring)
+        self.assertIsInstance(widgetDict['phone'], basestring)
+        self.assertIsInstance(widgetDict['email'], basestring)
         self.assertIsInstance(widgetDict['im'], dict)
-        self.assertIsInstance(widgetDict['link'], str)
-        self.assertIsInstance(widgetDict['category'], str)
+        self.assertIsInstance(widgetDict['link'], basestring)
+        self.assertIsInstance(widgetDict['category'], basestring)
         self.assertIsInstance(widgetDict['rating'], long)
 
         self.assertEqual(widgetDict['geopt'], {'lat': 1.3, 'lon': 1.3})
@@ -227,8 +227,8 @@ class MoraAsJSONTestCase(unittest.TestCase):
         #self.assertIsInstance(widgetDict['user'], dict)
 
         # references
-        self.assertIsInstance(widgetDict['reference'], str)
-        self.assertIsInstance(widgetDict['self_reference'], str)
+        self.assertIsInstance(widgetDict['reference'], basestring)
+        self.assertIsInstance(widgetDict['self_reference'], basestring)
 
         self.assertEqual(widgetDict['reference'], str(base.key()))
         self.assertEqual(widgetDict['self_reference'], str(widget1.key()))

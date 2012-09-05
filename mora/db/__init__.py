@@ -179,7 +179,7 @@ class StringProperty(db.StringProperty):
 
     if value is None: return None
 
-    return str(value)
+    return unicode(value)
 
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
@@ -236,7 +236,7 @@ class TextProperty(db.TextProperty):
 
     if value is None: return None
 
-    return str(value)
+    return unicode(value)
 
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
@@ -343,7 +343,7 @@ class BlobReferenceProperty(blobstore.BlobReferenceProperty):
       if blob_info is None: return None
 
       return {
-        'id': str(blob_info.key()),
+        'id': unicode(blob_info.key()),
         'content_type': blob_info.content_type,
         'creation': blob_info.creation.isoformat("T") + "+00:00",
         'filename': blob_info.filename,
@@ -406,7 +406,7 @@ class PostalAddressProperty(db.PostalAddressProperty):
 
     if value is None: return None
 
-    return str(value)
+    return unicode(value)
 
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
@@ -426,7 +426,7 @@ class PhoneNumberProperty(db.PhoneNumberProperty):
 
     if value is None: return None
 
-    return str(value)
+    return unicode(value)
 
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
@@ -446,7 +446,7 @@ class EmailProperty(db.EmailProperty):
 
     if value is None: return None
 
-    return str(value)
+    return unicode(value)
 
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
@@ -496,7 +496,7 @@ class LinkProperty(db.LinkProperty):
 
     if value is None: return None
 
-    return str(value)
+    return unicode(value)
 
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
@@ -515,7 +515,7 @@ class CategoryProperty(db.CategoryProperty):
 
     if value is None: return None
 
-    return str(value)
+    return unicode(value)
 
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
@@ -569,9 +569,9 @@ class UserProperty(db.UserProperty):
             "federated_identity": value.federated_identity(),
             "federated_provider": value.federated_provider()}
 
-  # def from_json(self, model_instance, value, attr_name=None):
-  #   if attr_name is None: attr_name = self.name
-  #   setattr(model_instance, attr_name, value)
+  def from_json(self, model_instance, value, attr_name=None):
+      # can't be changed
+      pass
 
 
 ### ReferenceProperty
@@ -657,7 +657,7 @@ class ReferenceProperty(db.ReferenceProperty):
 
     if value is None: return None
 
-    return str(value)
+    return unicode(value)
 
   def from_json(self, model_instance, value, attr_name=None):
     if attr_name is None: attr_name = self.name
