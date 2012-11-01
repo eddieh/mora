@@ -569,9 +569,9 @@ class UserProperty(db.UserProperty):
             "federated_identity": value.federated_identity(),
             "federated_provider": value.federated_provider()}
 
-  def from_json(self, model_instance, value, attr_name=None):
-      # can't be changed
-      pass
+  # def from_json(self, model_instance, value, attr_name=None):
+  #   if attr_name is None: attr_name = self.name
+  #   setattr(model_instance, attr_name, value)
 
 
 ### ReferenceProperty

@@ -213,10 +213,9 @@ class RestDispatcher(webapp.RequestHandler):
             try:
                 self.action(act, exceptions=True)
             except DispatchError as error:
-                self.response.set_status(error.code)
-                self.response.headers['Content-Type'] = 'application/json'
-                resp = json.dumps({"error":error.message})
-                self.response.out.write(resp)
+                self.response.status = error.code
+                self.response.content_type = 'application/json'
+                self.response.out.write(json.dumps({"error": error.message}))
             return
 
         # We also support a special `_method` argument to change the
