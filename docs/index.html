@@ -1,0 +1,280 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="docs/images/favicon.ico" />
+  <link href="style.css" rel="stylesheet" />
+  <title>Mora for Google App Engine (GAE)</title>
+</head>
+
+<body>
+
+  <p>
+    <img src="mora.png"><br />
+    Mora &copy; 2012 James Dean Palmer, Eddie Hillenbrand
+  </p>
+
+  <p>Mora is a small package that makes adding RESTful services to
+  Google App Engine models in Python easy.  Mora provides an interface
+  inspired by Rails' routing actions but provides RESTful services
+  similar to Facebook.  Specifically, resources are never nested and
+  are always uniquely idenified by their ID.  This is an especially
+  good match for app engine since Google's model identifiers contain
+  both a table id and a model identifier encoded in a single id.</p>
+
+  <p>The project
+  is <a href="https://bitbucket.org/jdpalmer/mora">hosted on
+  Bitbucket</a>, and the annotated source code
+  for <a href="mora.db.html">mora.db</a>
+  and <a href="mora.rest.html">mora.rest</a> is available in addition
+  to this documention.
+  </p>
+
+  <h2 class="section">Basic Usage</h2>
+
+  <p>Mora provides a nearly drop-in extension of Google's models.  It
+  extends Google's models in a few ways including support for json
+  model import and export.  In the simplest case, you can use this
+  exactly like Google's db.Model:</p>
+
+<pre class="prettyprint linenums language-py">
+from mora import db
+
+class MyUserModel(db.MoraModel):
+
+    google_user = db.UserProperty()
+
+    join_date = db.DateTimeProperty(auto_now_add=True)</pre>
+
+<p>You can then create RESTful services for User objects by creating a
+rest handler:</p>
+
+<pre class="prettyprint linenums language-py">
+from more.rest import RestHandler
+from models import MyUserModel
+
+class UserHandler(RestHandler)
+
+    model = MyUserModel
+
+    def show(self):
+      self.respond.out.write(self.model.to_json())
+
+    def update(self):
+      self.model.from_json(self.params)
+</pre>
+
+  <p>and finally you can connect this handler to your main routing
+  table:
+  </p>
+
+<pre class="prettyprint linenums language-py">
+import webapp2 as webapp
+from mora.rest import RestDispatcher
+
+import services
+
+RestDispatcher.setup('/graph/', [services.UserHandler])
+
+app = webapp.WSGIApplication(
+    [('/', services.RootHandler),
+     RestDispatcher.route()], debug = True)
+</pre>
+
+  <p>Now if <b>ag9kZXZ-YmVhbmdyaW5kZXJyCgsSBFVzZXIYAQw</b> was a User
+  object id, we can get a json representation of that object with:</p>
+
+  <pre>GET /graph/ag9kZXZ-YmVhbmdyaW5kZXJyCgsSBFVzZXIYAQw</pre>
+
+  <p>and we can update the object by passing object properties as
+  fields with:</p>
+
+  <pre>PUT /graph/ag9kZXZ-YmVhbmdyaW5kZXJyCgsSBFVzZXIYAQw</pre>
+
+  <h2 class="section">Implementing RESTful Actions</h2>
+
+  <p>Mora's RestHandler has three named RESTful actions:</p>
+
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th><span class="caps">HTTP</span> Verb </th>
+        <th>Path</th>
+        <th>Action </th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="caps">GET</span>         </td>
+        <td>/graph/:id        </td>
+        <td>show</td>
+        <td>display the object corresponding to :id.</td>
+      </tr>
+      <tr>
+        <td><span class="caps">PUT</span>         </td>
+        <td>/graph/:id</td>
+        <td>update</td>
+        <td>update the object corresponding to :id.</td>
+      </tr>
+      <tr>
+        <td><span class="caps">DELETE</span>        </td>
+        <td>/graph/:id</td>
+        <td>destroy</td>
+        <td>Remove the object corresponding to :id.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The previous UserHandler example illustrated how you can
+  implement these actions.  But you may notice something is missing.
+  Our basic example does not include a way to add objects to the
+  system or list objects.  Lets say that our user can have a list of
+  clubs that they belong to.</p>
+
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th><span class="caps">HTTP</span> Verb </th>
+        <th>Path</th>
+        <th>Action </th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="caps">GET</span>         </td>
+        <td>/graph/:id/clubs        </td>
+        <td>index</td>
+        <td>list the clubs that :id belongs to.</td>
+      </tr>
+      <tr>
+        <td><span class="caps">POST</span>         </td>
+        <td>/graph/:id/clubs</td>
+        <td>create</td>
+        <td>add a club.</td>
+      </tr>
+      <tr>
+        <td><span class="caps">DELETE</span>        </td>
+        <td>/graph/:id/clubs/:club_id</td>
+        <td>destroy (weak)</td>
+        <td>Remove :club_id from the list of clubs for :id.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>Implementing these actions involves using special method
+  decorators.</p>
+
+<pre class="prettyprint linenums language-py">
+from more.rest import RestHandler
+from models import MyUserModel
+from models import ClubModel
+
+class UserHandler(RestHandler)
+
+    model = MyUserModel
+
+    def show(self):
+        self.respond.out.write(self.model.to_json())
+
+    def update(self):
+        self.model.from_json(self.params)
+
+    @rest_index("clubs")
+    def club_list(self):
+        clubs = []
+        for club in ClubModel.all().fetch(1000):
+            clubs.append(club.as_json())
+        self.respond.out.writeln(json.dumps(clubs))
+
+    @rest_create("clubs")
+    def club_new(self):
+        club = ClubModel()
+        club.from_json(self.params)
+
+    @rest_destroy("clubs")
+    def club_remove(self):
+        # TODO: Rework this into an example where it matters..
+        pass
+
+</pre>
+
+  <h2 class="section">Customizing JSON output with as_json</h2>
+
+  <p>In the examples so far, there is very little business logic.  The
+  place to put it is in as_json.  Suppose we don't want to reveal the
+  join_date when people query a User:</p>
+
+<pre class="prettyprint linenums language-py">
+from mora import db
+
+class MyUserModel(db.MoraModel):
+
+    google_user = db.UserProperty()
+
+    join_date = db.DateTimeProperty(auto_now_add=True)
+
+    def as_json(self, options={}, include=None, exclude=None):
+        return self._as_json(options, include, exclude=["join_date"])
+</pre>
+
+  <p>Easy peasy.</p>
+
+  <h2 class="section">Fat Models and Django-style Model Referencing</h2>
+
+  <p>Google's Model class is very much inspired by Django, but they
+  left an important bit out that helps us get around circular
+  dependencies in Python.  The following code just doesn't work:</p>
+
+<pre class="prettyprint linenums language-py">
+class A(db.Model):
+
+    b = db.ReferenceProperty(B)
+
+class B(db.Model):
+
+    a = db.ReferenceProperty(A)
+</pre>
+
+  <p>This circular dependency just won't work.  Mora adds back
+  Django's solution:</p>
+
+<pre class="prettyprint linenums language-py">
+class A(db.Model):
+
+    b = db.ReferenceProperty("B")
+
+class B(db.Model):
+
+    a = db.ReferenceProperty("A")
+</pre>
+
+  <p>When all the classes are loaded these class strings get resolved
+  to the right classes in a lookup table.</p>
+
+  <h2 class="section">Computed Properties</h2>
+
+  <p>Google app engine supports computed properties and we have simply
+  extended them to also work with the new as_json methods and they
+  also include type support.</p>
+
+<pre class="prettyprint linenums language-py">
+class A(db.Model):
+
+    @computed_property(StringProperty(default=""))
+    def description(self):
+        return "A is a model."
+</pre>
+
+  <p>Now if we run as_json on A, it will include description by
+  default and it can also be used in GQL.</p>
+
+<script src="http://cdnjs.cloudflare.com/ajax/libs/prettify/188.0.0/prettify.js"></script>
+<script type="text/javascript">
+  // make code pretty
+  window.prettyPrint && prettyPrint()
+</script>
+
+</body>
+</html>

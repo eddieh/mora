@@ -132,10 +132,8 @@ get = db.get
 ### Help Functions
 
 # As a consequence of allowing string class specifiers for
-# ReferenceProperty and ReverseReferenceProperty we must provide a
-# PolyModel aware replacement for db.class_for_kind. We attempt to
-# handle PolyModels first before falling back on to
-# db.class_for_kind
+# `ReferenceProperty` and `ReverseReferenceProperty` we must provide a
+# `PolyModel` aware replacement for `db.class_for_kind`.
 def class_for_kind(kind):
   for t in polymodel._class_map.keys():
       if kind == t[-1]:
@@ -166,10 +164,10 @@ Property = db.Property
 # replacements for the original properties but they also have the new
 # `as_json` method.
 
-# Additionally we add from_json to each property which completes our
+# Additionally we add `from_json` to each property which completes our
 # support for importing and exporting JSON from models.
 
-## Primitive Properties
+### Primitive Properties
 
 class StringProperty(db.StringProperty):
 
@@ -243,13 +241,10 @@ class TextProperty(db.TextProperty):
     setattr(model_instance, attr_name, value)
 
 
-## Temporal
+### Temporal
 
-# There is no standard for date representation in JSON.  We use
-# ISO8601 for representing time which is pretty common.
-
-# JSON.stringify(new Date()) -> 2012-04-06T19:36:35.716Z
-# iso8601.parse_date("2012-04-06T19:36:35.716Z")
+# There is no standard for date representation in JSON. We use ISO8601
+# for representing time which is pretty common.
 
 class DateTimeProperty(db.DateTimeProperty):
 
@@ -302,7 +297,7 @@ class TimeProperty(db.TimeProperty):
     setattr(model_instance, attr_name, value)
 
 
-## Binary data
+### Binary data
 
 class ByteStringProperty(db.ByteStringProperty):
 
@@ -363,20 +358,20 @@ class BlobReferenceProperty(blobstore.BlobReferenceProperty):
       setattr(model_instance, attr_name, value)
 
 
-## Special Google Data Protocol, GeoRSS GML Properties, and Atom
+### Special Google Data Protocol Properties
 
 # GeoPtProperty
 # A geographical point represented by floating-point latitude and
 # longitude coordinates (Google says: In XML, this is a
 # georss:point element):
 #
-# <gml:Point>
-#   <gml:pos>45.256 -71.92</gml:pos>
-# </gml:Point>
+#      <gml:Point>
+#        <gml:pos>45.256 -71.92</gml:pos>
+#      </gml:Point>
 class GeoPtProperty(db.GeoPtProperty):
 
   # Return a GeoPt as JSON with the following form:
-  #  {lat: 45.256, -71.92}
+  #      {lat: 45.256, -71.92}
   def as_json(self, model_instance, value=None):
     if value is None:
       value = self.get_value_for_datastore(model_instance)
@@ -394,10 +389,10 @@ class GeoPtProperty(db.GeoPtProperty):
 # A postal address. This is a subclass of the built-in unicode type
 # (Google says: In XML, this is a gd:postalAddress element):
 #
-# <gd:postalAddress>
-#   500 West 45th Street
-#   New York, NY 10036
-# </gd:postalAddress>
+#      <gd:postalAddress>
+#        500 West 45th Street
+#        New York, NY 10036
+#      </gd:postalAddress>
 class PostalAddressProperty(db.PostalAddressProperty):
 
   def as_json(self, model_instance, value=None):
@@ -417,7 +412,7 @@ class PostalAddressProperty(db.PostalAddressProperty):
 # built-in unicode type (In XML, this is a gd.phoneNumber
 # element):
 #
-# <gd:phoneNumber>(425) 555-8080 ext. 72585</gd:phoneNumber>
+#      <gd:phoneNumber>(425) 555-8080 ext. 72585</gd:phoneNumber>
 class PhoneNumberProperty(db.PhoneNumberProperty):
 
   def as_json(self, model_instance, value=None):
@@ -437,7 +432,7 @@ class PhoneNumberProperty(db.PhoneNumberProperty):
 # perform validation of email addresses, they just store the
 # value (In XML, this is a gd:email element):
 #
-# <gd:email address="foo@bar.example.com"/>
+#      <gd:email address="foo@bar.example.com"/>
 class EmailProperty(db.EmailProperty):
 
   def as_json(self, model_instance, value=None):
@@ -461,10 +456,10 @@ class EmailProperty(db.EmailProperty):
 # the instant messaging service. address is the handle's address.
 # In XML, this is a gd:im element:
 #
-# <gd:im protocol="http://schemas.google.com/g/2005#MSN"
-#        address="foo@bar.msn.com"
-#        rel="http://schemas.google.com/g/2005#home"
-#        primary="true"/>
+#      <gd:im protocol="http://schemas.google.com/g/2005#MSN"
+#             address="foo@bar.msn.com"
+#             rel="http://schemas.google.com/g/2005#home"
+#             primary="true"/>
 class IMProperty(db.IMProperty):
 
   # Return an IM as JSON with the following form:
@@ -487,7 +482,7 @@ class IMProperty(db.IMProperty):
 # A fully qualified URL. This is a subclass of the built-in
 # unicode type. In XML, this is an Atom Link element:
 #
-# <link href="http://www.google.com/" />
+#      <link href="http://www.google.com/" />
 class LinkProperty(db.LinkProperty):
 
   def as_json(self, model_instance, value=None):
@@ -506,7 +501,7 @@ class LinkProperty(db.LinkProperty):
 # A category or "tag". This is a subclass of the built-in unicode
 # type. In XML, this is an Atom Category element:
 #
-# <category term="kittens" />
+#      <category term="kittens" />
 class CategoryProperty(db.CategoryProperty):
 
   def as_json(self, model_instance, value=None):
@@ -528,7 +523,7 @@ class CategoryProperty(db.CategoryProperty):
 # and 100, and raises a BadValueError if the value is invalid.
 # In XML, this is a gd:rating element:
 #
-# <gd:rating value="4" />
+#      <gd:rating value="4" />
 class RatingProperty(db.RatingProperty):
 
   def as_json(self, model_instance, value=None):
@@ -543,18 +538,13 @@ class RatingProperty(db.RatingProperty):
     if attr_name is None: attr_name = self.name
     setattr(model_instance, attr_name, Rating(value))
 
-## Special User Property
+### Special User Property
 
 # UserProperty
 # A user with a Google account. A User value in the datastore does
 # not get updated if the user changes her email address. This may
 # be remedied in a future release. Until then, you can use the
 # User value's user_id() as the user's stable unique identifier.
-# nickname()
-# email()
-# user_id()
-# federated_identity()
-# federated_provider()
 class UserProperty(db.UserProperty):
 
   def as_json(self, model_instance, value=None):
@@ -569,9 +559,8 @@ class UserProperty(db.UserProperty):
             "federated_identity": value.federated_identity(),
             "federated_provider": value.federated_provider()}
 
-  # def from_json(self, model_instance, value, attr_name=None):
-  #   if attr_name is None: attr_name = self.name
-  #   setattr(model_instance, attr_name, value)
+  def from_json(self, model_instance, value, attr_name=None):
+    pass
 
 
 ### ReferenceProperty
@@ -705,7 +694,6 @@ class ReverseReferenceProperty(object):
   def _model(self):
     """Internal helper to access the model class, read-only."""
     if isinstance(self.__model, basestring):
-        # resolve and cache the class
         self.__model = class_for_kind(self.__model)
     return self.__model
 
@@ -811,7 +799,7 @@ class computed_property(object):
                             indexed=self.indexed)
 
 
-## Lists
+### Lists
 
 class StringListProperty(db.StringListProperty):
 
@@ -1008,15 +996,15 @@ class MoraModel(db.Model, ModelMixin):
             return str(self.key())
         return ""
 
-    # We also add the method class_name to our base model to mirror
-    # the class_name method in Google's PolyModel class.
+    # We also add the method `class_name` to our base model to mirror
+    # the `class_name` method in Google's `PolyModel` class.
     @classmethod
     def class_name(cls):
         return cls.kind()
 
 
 # TODO: Do we need to replicate the App Engine PolyModel code with its
-# metaclass voodoo or is there a simpler way to have kind() behave
+# metaclass voodoo or is there a simpler way to have `kind()` behave
 # like it does for a vanilla App Engine PolyModel?
 
 ### MoraPolyModel
@@ -1029,8 +1017,8 @@ class MoraPolyModel(polymodel.PolyModel, ModelMixin):
             return str(self.key())
         return ""
 
-    # We also add the method class_name here to mirror the class_name
-    # method in Google's PolyModel class.
+    # We also add the method `class_name` here to mirror the
+    # `class_name` method in Google's `PolyModel` class.
     @classmethod
     def class_name(cls):
         return cls.__name__

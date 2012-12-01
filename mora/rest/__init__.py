@@ -155,6 +155,9 @@ class RestDispatcher(webapp.RequestHandler):
     @classmethod
     def connect(cls, rest_handler):
         model = rest_handler.model
+        # The model can be a model class or a list of model
+        # classes. This allows us to emulate polymorphic handlers
+        # without ambiguity.
         if hasattr(model, '__iter__'):
             for m in model:
                 cls.rest_handlers[m.class_name()] = rest_handler
@@ -168,14 +171,12 @@ class RestDispatcher(webapp.RequestHandler):
         for k, v in inspect.getmembers(rest_handler):
             if hasattr(v, "_mora_verb"):
                 verbs.update([getattr(v, "_mora_verb")])
-        #logging.info(verbs)
 
         # We also include the standard rest methods.
         verbs.update({"GET __self__": "show",
                       "DELETE __self__": "destroy",
                       "PUT __self__": "update"})
 
-        #logging.info(verbs)
         # We then attach this list of actions to the class.
         setattr(rest_handler, "_mora_verbs", verbs)
 
@@ -273,7 +274,6 @@ class RestDispatcher(webapp.RequestHandler):
             action_method = rest_handler._mora_verbs[action_key]
             result = getattr(rest_handler, action_method)()
         else:
-            #logging.info(action_key)
             raise DispatchError(405, "UnsupportedHttpVerb")
 
 ### RestHandler
@@ -283,14 +283,15 @@ class RestDispatcher(webapp.RequestHandler):
 # or create new methods.
 #
 # RestHandler has these properties:
-#   model: the model this handler is for
-#   request: the webapp request object
-#   response: the webapp response object
-#   params: the decoded query string or message body if the
-#           "Content-Type" of the request is
-#           "application/x-www-form-urlencoded" or
-#           "multipart/form-data"
-#   body: the decoded body
+#
+#   * model: the model this handler is for
+#   * request: the webapp request object
+#   * response: the webapp response object
+#   * params: the decoded query string or message body if the
+#             "Content-Type" of the request is
+#             "application/x-www-form-urlencoded" or
+#             "multipart/form-data"
+#   * body: the decoded body
 class RestHandler(object):
 
     _mora_verbs = {}
@@ -308,34 +309,34 @@ class RestHandler(object):
         if self.request.content_type.startswith('application/json'):
             return json.loads(self.request.body)
 
-        # TODO: decode other media-types
+        # TODO: decode other media-types?
         return {}
 
     def setup(self):
         pass
 
-    # REST methods should be very lightweight.  Use the as_json method
-    # to push business logic into the model.  Here are some example
-    # implementations for each method:
+    # REST methods should be very lightweight.  Use the `as_json`
+    # method to push business logic into the model.  Here are some
+    # example implementations for each method:
 
     # Example:
     #
     #     def show(self):
-    #       self.response.out.write(self.model.to_json())
+    #         self.response.out.write(self.model.to_json())
     def show(self):
         raise DispatchError(405, "UnsupportedHttpVerb")
 
     # Example:
     #
     #     def update(self):
-    #       self.model.from_json(self.params)
+    #         self.model.from_json(self.params)
     def update(self):
         raise DispatchError(405, "UnsupportedHttpVerb")
 
     # Example:
     #
     #     def destroy(self):
-    #       self.model.delete()
-    #       self.response.out.write({})
+    #         self.model.delete()
+    #         self.response.out.write({})
     def destroy(self):
         raise DispatchError(405, "UnsupportedHttpVerb")

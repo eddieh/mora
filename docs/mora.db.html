@@ -1,4 +1,4 @@
-<!DOCTYPE html>  <html> <head>   <title>mora/db/__index__.py</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               mora/db/__index__.py             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <pre><code>(c) 2012 James Dean Palmer
+<!DOCTYPE html>  <html> <head>   <title>mora/db/__init__.py</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               mora/db/__init__.py             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <pre><code>(c) 2012 James Dean Palmer
 (c) 2007 Google Inc.
 Mora may be freely distributed under the Apache 2.0
 licence.  You may obtain a copy of this license at
@@ -24,7 +24,7 @@ generated.  Last time I checked there was no
 Model-View-Controller-JSONEncoder paradigm.  The JSONEncoder is the
 wrong place to make view decisions or business logic decisions.</p>
 
-<p>Rails has split the JSON rendering process into <a href="http://jonathanjulian.com/2010/04/rails-to_json-or-as_json/" title="Rails to_json or as_json?">two parts</a>.
+<p>Rails has split the JSON rendering process into [two parts][julian].
 A method called <code>as_json</code> is used to build a representation made of
 core JSON-types.  <code>as_json</code> is the smart half of the equation and
 belongs to the Model and can make business logic decisions.
@@ -33,12 +33,23 @@ does.</p>
 
 <p>Mora adopts this philoshopy and adds <code>as_json</code> to GAE's models <em>and</em>
 types.  If you add new models and types and also add the <code>as_json</code>
-method it will all just work (TM).</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <h2>Dependencies</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>We import some standard modules and also Google App Engine's <code>db</code>
+method it will all just work (TM).
+[julian]:
+http://jonathanjulian.com/2010/04/rails-to<em>json-or-as</em>json/ "Rails
+to<em>json or as</em>json?"</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <h2>Dependencies</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>We import some standard modules and also Google App Engine's <code>db</code>
 and <code>polymodel</code> modules.  We have to dig at GAE's guts a bit to
 shoehorn in better per type JSON support but most of this can be
 accomplished with simple subclassing.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">iso8601</span>
+
+<span class="kn">from</span> <span class="nn">xml.sax</span> <span class="kn">import</span> <span class="n">saxutils</span>
 <span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">db</span>
-<span class="kn">from</span> <span class="nn">google.appengine.ext.db</span> <span class="kn">import</span> <span class="n">polymodel</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>GAE supports a couple of versions of Python and the GAE environment.
+<span class="kn">from</span> <span class="nn">google.appengine.ext.db</span> <span class="kn">import</span> <span class="n">polymodel</span>
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">datastore</span>
+<span class="kn">from</span> <span class="nn">google.appengine.api</span> <span class="kn">import</span> <span class="n">users</span>
+<span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">blobstore</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>GAE supports a couple of versions of Python and the GAE environment.
 We will try to use the latest modules and then use <code>ImportError</code>
 exceptions to select older variations.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">json</span>
@@ -48,7 +59,8 @@ exceptions to select older variations.</p>             </td>             <td cla
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">import</span> <span class="nn">webapp2</span> <span class="kn">as</span> <span class="nn">webapp</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-    <span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">webapp</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <h2>Keys and Errors</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>These remain unchanged so we simply import them into this namespace.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="n">Error</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Error</span>
+    <span class="kn">from</span> <span class="nn">google.appengine.ext</span> <span class="kn">import</span> <span class="n">webapp</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <h2>Keys and Errors</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>These remain unchanged so we simply import them into this namespace.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="n">transactional</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">transactional</span>
+<span class="n">Error</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Error</span>
 <span class="n">BadValueError</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BadValueError</span>
 <span class="n">BadPropertyError</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BadPropertyError</span>
 <span class="n">BadRequestError</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">BadRequestError</span>
@@ -91,18 +103,42 @@ exceptions to select older variations.</p>             </td>             <td cla
 <span class="n">DerivedPropertyError</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">DerivedPropertyError</span>
 
 <span class="n">Query</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Query</span>
-<span class="n">get</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <h2>Properties</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <p>Since Python is duck-typed, there's really no reason to change the
+<span class="n">get</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <h2>Help Functions</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <p>As a consequence of allowing string class specifiers for
+<code>ReferenceProperty</code> and <code>ReverseReferenceProperty</code> we must provide a
+<code>PolyModel</code> aware replacement for <code>db.class_for_kind</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">def</span> <span class="nf">class_for_kind</span><span class="p">(</span><span class="n">kind</span><span class="p">):</span>
+  <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">polymodel</span><span class="o">.</span><span class="n">_class_map</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+      <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">polymodel</span><span class="o">.</span><span class="n">_class_map</span><span class="p">[</span><span class="n">t</span><span class="p">]</span>
+  <span class="k">try</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">_kind_map</span><span class="p">[</span><span class="n">kind</span><span class="p">]</span>
+  <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="n">KindError</span><span class="p">(</span><span class="s">&#39;No implementation for kind </span><span class="se">\&#39;</span><span class="si">%s</span><span class="se">\&#39;</span><span class="s">&#39;</span> <span class="o">%</span> <span class="n">kind</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">class_for_model</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">class_for_kind</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">class_name</span><span class="p">())</span>
+
+<span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="n">_class</span> <span class="o">=</span> <span class="n">class_for_kind</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_class</span><span class="p">(</span><span class="o">**</span><span class="n">kwds</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <h2>Properties</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <p>Since Python is duck-typed, there's really no reason to change the
 implementation of db.Property even though we are adding <code>as_json</code> to
 all of its subclasses.  We add it here to mirror the original
-definition.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="n">Property</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Property</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <p>We change the other core properties by simply subclassing them with
+definition.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="n">Property</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Property</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <p>We change the other core properties by simply subclassing them with
 the same name in a different namespace.  This makes them drop-in
 replacements for the original properties but they also have the new
-<code>as_json</code> method.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">StringProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">):</span>
+<code>as_json</code> method.</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <p>Additionally we add <code>from_json</code> to each property which completes our
+support for importing and exporting JSON from models.</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <h2>Primitive Properties</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">StringProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">):</span>
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">BooleanProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">BooleanProperty</span><span class="p">):</span>
@@ -110,106 +146,327 @@ replacements for the original properties but they also have the new
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
     <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 <span class="k">class</span> <span class="nc">IntegerProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">):</span>
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
     <span class="k">return</span> <span class="nb">long</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 <span class="k">class</span> <span class="nc">FloatProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">FloatProperty</span><span class="p">):</span>
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 <span class="k">class</span> <span class="nc">TextProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">TextProperty</span><span class="p">):</span>
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
 
-<span class="k">class</span> <span class="nc">ByteStringProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">ByteStringProperty</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
-  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-
-
-<span class="k">class</span> <span class="nc">EmailProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">EmailProperty</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <h2>Temporal</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <p>There is no standard for date representation in JSON. We use ISO8601
+for representing time which is pretty common.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">DateTimeProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">):</span>
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
 
-<span class="k">class</span> <span class="nc">PostalAddressProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">PostalAddressProperty</span><span class="p">):</span>
-
-  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <p>There is no standard for date representation in JSON.  We use
-ISO8601 for representing time which is pretty common.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">DateTimeProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">):</span>
-
-  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="s">&quot;T&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;+00:00&quot;</span>
 
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="n">iso8601</span><span class="o">.</span><span class="n">parse_date</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 <span class="k">class</span> <span class="nc">DateProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">DateProperty</span><span class="p">):</span>
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
     <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="s">&quot;T&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;+00:00&quot;</span>
 
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="n">iso8601</span><span class="o">.</span><span class="n">parse_date</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
 <span class="k">class</span> <span class="nc">TimeProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">TimeProperty</span><span class="p">):</span>
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
     <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="s">&quot;T&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;+00:00&quot;</span>
 
-
-<span class="k">class</span> <span class="nc">ListProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">ListProperty</span><span class="p">):</span>
-
-  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <p>TODO: Flatten each item inside the list</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">return</span> <span class="n">value</span>
-
-
-<span class="k">class</span> <span class="nc">StringListProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">StringListProperty</span><span class="p">):</span>
-
-  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <p>TODO: Flatten each item inside the list</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">return</span> <span class="n">value</span>
-
-
-<span class="k">class</span> <span class="nc">UserProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">UserProperty</span><span class="p">):</span>
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="n">iso8601</span><span class="o">.</span><span class="n">parse_date</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-19">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-19">&#182;</a>               </div>               <h2>Binary data</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">ByteStringProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">ByteStringProperty</span><span class="p">):</span>
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="n">encoded</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">urlsafe_b64encode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">saxutils</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">BlobProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">BlobProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
-      <span class="k">return</span> <span class="p">{}</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="n">encoded</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">urlsafe_b64encode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">saxutils</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<span class="k">class</span> <span class="nc">BlobReferenceProperty</span><span class="p">(</span><span class="n">blobstore</span><span class="o">.</span><span class="n">BlobReferenceProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">blob_info</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">blob_info</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+      <span class="k">return</span> <span class="p">{</span>
+        <span class="s">&#39;id&#39;</span><span class="p">:</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">blob_info</span><span class="o">.</span><span class="n">key</span><span class="p">()),</span>
+        <span class="s">&#39;content_type&#39;</span><span class="p">:</span> <span class="n">blob_info</span><span class="o">.</span><span class="n">content_type</span><span class="p">,</span>
+        <span class="s">&#39;creation&#39;</span><span class="p">:</span> <span class="n">blob_info</span><span class="o">.</span><span class="n">creation</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(</span><span class="s">&quot;T&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s">&quot;+00:00&quot;</span><span class="p">,</span>
+        <span class="s">&#39;filename&#39;</span><span class="p">:</span> <span class="n">blob_info</span><span class="o">.</span><span class="n">filename</span><span class="p">,</span>
+        <span class="s">&#39;size&#39;</span><span class="p">:</span> <span class="n">blob_info</span><span class="o">.</span><span class="n">size</span><span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&#39;&#39;</span><span class="p">:</span> <span class="n">value</span> <span class="o">=</span> <span class="bp">None</span></pre></div>             </td>           </tr>                               <tr id="section-20">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-20">&#182;</a>               </div>               <p>If there is an id in this struct then its output from our
+as_json() above.
+TODO: use isinstance</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span> <span class="ow">and</span> <span class="s">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+      <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="p">{</span><span class="s">&quot;nickname&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">nickname</span><span class="p">(),</span>
-              <span class="s">&quot;email&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">email</span><span class="p">(),</span>
-              <span class="s">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">user_id</span><span class="p">(),</span>
-              <span class="s">&quot;federated_identity&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">federated_identity</span><span class="p">(),</span>
-              <span class="s">&quot;federated_provider&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">federated_provider</span><span class="p">()}</span></pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <h2>ReferenceProperty</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <p>The <code>ReferenceProperty</code> likewise has a simple <code>as_json</code> method
+      <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-21">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-21">&#182;</a>               </div>               <h2>Special Google Data Protocol Properties</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-22">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-22">&#182;</a>               </div>               <p>GeoPtProperty
+A geographical point represented by floating-point latitude and
+longitude coordinates (Google says: In XML, this is a
+georss:point element):</p>
+
+<pre><code> &lt;gml:Point&gt;
+   &lt;gml:pos&gt;45.256 -71.92&lt;/gml:pos&gt;
+ &lt;/gml:Point&gt;
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">GeoPtProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">GeoPtProperty</span><span class="p">):</span></pre></div>             </td>           </tr>                               <tr id="section-23">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-23">&#182;</a>               </div>               <p>Return a GeoPt as JSON with the following form:
+     {lat: 45.256, -71.92}</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s">&#39;lat&#39;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">lat</span><span class="p">,</span> <span class="s">&#39;lon&#39;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">lon</span><span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></pre></div>             </td>           </tr>                               <tr id="section-24">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-24">&#182;</a>               </div>               <p>TODO: we should handle the single string case: '13.42,42.13'</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">GeoPt</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="s">&#39;lat&#39;</span><span class="p">],</span> <span class="n">value</span><span class="p">[</span><span class="s">&#39;lon&#39;</span><span class="p">]))</span></pre></div>             </td>           </tr>                               <tr id="section-25">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-25">&#182;</a>               </div>               <p>PostalAddressProperty
+A postal address. This is a subclass of the built-in unicode type
+(Google says: In XML, this is a gd:postalAddress element):</p>
+
+<pre><code> &lt;gd:postalAddress&gt;
+   500 West 45th Street
+   New York, NY 10036
+ &lt;/gd:postalAddress&gt;
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">PostalAddressProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">PostalAddressProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">PostalAddress</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></pre></div>             </td>           </tr>                               <tr id="section-26">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-26">&#182;</a>               </div>               <p>PhoneNumberProperty
+A human-readable telephone number. This is a subclass of the
+built-in unicode type (In XML, this is a gd.phoneNumber
+element):</p>
+
+<pre><code> &lt;gd:phoneNumber&gt;(425) 555-8080 ext. 72585&lt;/gd:phoneNumber&gt;
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">PhoneNumberProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">PhoneNumberProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">PhoneNumber</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></pre></div>             </td>           </tr>                               <tr id="section-27">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-27">&#182;</a>               </div>               <p>EmailProperty
+An email address. Neither the property class nor the value class
+perform validation of email addresses, they just store the
+value (In XML, this is a gd:email element):</p>
+
+<pre><code> &lt;gd:email address="foo@bar.example.com"/&gt;
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">EmailProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">EmailProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">==</span> <span class="s">&quot;&quot;</span><span class="p">:</span></pre></div>             </td>           </tr>                               <tr id="section-28">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-28">&#182;</a>               </div>               <p>Make sure we can set this value to None.</p>             </td>             <td class="code">               <div class="highlight"><pre>      <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">Email</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></pre></div>             </td>           </tr>                               <tr id="section-29">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-29">&#182;</a>               </div>               <p>IMProperty
+An instant messaging handle. protocol is the canonical URL of
+the instant messaging service. address is the handle's address.
+In XML, this is a gd:im element:</p>
+
+<pre><code> &lt;gd:im protocol="http://schemas.google.com/g/2005#MSN"
+        address="foo@bar.msn.com"
+        rel="http://schemas.google.com/g/2005#home"
+        primary="true"/&gt;
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">IMProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">IMProperty</span><span class="p">):</span></pre></div>             </td>           </tr>                               <tr id="section-30">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-30">&#182;</a>               </div>               <p>Return an IM as JSON with the following form:
+ {protocol: msn.com, address: 'foo@bar.msn.com'}</p>             </td>             <td class="code">               <div class="highlight"><pre>  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s">&#39;protocol&#39;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">protocol</span><span class="p">,</span> <span class="s">&#39;address&#39;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">address</span><span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span></pre></div>             </td>           </tr>                               <tr id="section-31">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-31">&#182;</a>               </div>               <p>TODO: we should handle the single string case: 'http:aim.com dlynch'</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span>
+            <span class="n">IM</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="s">&#39;protocol&#39;</span><span class="p">],</span> <span class="n">value</span><span class="p">[</span><span class="s">&#39;address&#39;</span><span class="p">]))</span></pre></div>             </td>           </tr>                               <tr id="section-32">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-32">&#182;</a>               </div>               <p>LinkProperty
+A fully qualified URL. This is a subclass of the built-in
+unicode type. In XML, this is an Atom Link element:</p>
+
+<pre><code> &lt;link href="http://www.google.com/" /&gt;
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">LinkProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">LinkProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">Link</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></pre></div>             </td>           </tr>                               <tr id="section-33">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-33">&#182;</a>               </div>               <p>CategoryProperty
+A category or "tag". This is a subclass of the built-in unicode
+type. In XML, this is an Atom Category element:</p>
+
+<pre><code> &lt;category term="kittens" /&gt;
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">CategoryProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">CategoryProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">Category</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></pre></div>             </td>           </tr>                               <tr id="section-34">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-34">&#182;</a>               </div>               <p>RatingProperty
+A user-provided rating for a piece of content, as an integer
+between 0 and 100. This is a subclass of the built-in long
+type. The class validates that the value is an integer between 0
+and 100, and raises a BadValueError if the value is invalid.
+In XML, this is a gd:rating element:</p>
+
+<pre><code> &lt;gd:rating value="4" /&gt;
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">RatingProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">RatingProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">long</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">Rating</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></pre></div>             </td>           </tr>                               <tr id="section-35">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-35">&#182;</a>               </div>               <h2>Special User Property</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-36">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-36">&#182;</a>               </div>               <p>UserProperty
+A user with a Google account. A User value in the datastore does
+not get updated if the user changes her email address. This may
+be remedied in a future release. Until then, you can use the
+User value's user_id() as the user's stable unique identifier.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">UserProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">UserProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="s">&quot;nickname&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">nickname</span><span class="p">(),</span>
+            <span class="s">&quot;email&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">email</span><span class="p">(),</span>
+            <span class="s">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">user_id</span><span class="p">(),</span>
+            <span class="s">&quot;federated_identity&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">federated_identity</span><span class="p">(),</span>
+            <span class="s">&quot;federated_provider&quot;</span><span class="p">:</span> <span class="n">value</span><span class="o">.</span><span class="n">federated_provider</span><span class="p">()}</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">pass</span></pre></div>             </td>           </tr>                               <tr id="section-37">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-37">&#182;</a>               </div>               <h2>ReferenceProperty</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-38">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-38">&#182;</a>               </div>               <p>The <code>ReferenceProperty</code> likewise has a simple <code>as_json</code> method
 similar to the properties we defined above, but I'm taking this
 opportunity to fix one of GAE's misfeatures.  When you create a
 reference in GAE it creates a backreference in the referenced
@@ -257,6 +514,9 @@ reference class as needed.</p>             </td>             <td class="code">  
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datastore</span><span class="o">.</span><span class="n">Key</span><span class="p">):</span>
       <span class="k">return</span> <span class="n">value</span>
 
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+      <span class="k">return</span> <span class="n">datastore</span><span class="o">.</span><span class="n">Key</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">value</span><span class="o">.</span><span class="n">has_key</span><span class="p">():</span>
       <span class="k">raise</span> <span class="n">BadValueError</span><span class="p">(</span>
           <span class="s">&#39;</span><span class="si">%s</span><span class="s"> instance must have a complete key before it can be stored as a &#39;</span>
@@ -265,15 +525,15 @@ reference class as needed.</p>             </td>             <td class="code">  
     <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">ReferenceProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">_kind_map</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">_kind_map</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">KindError</span><span class="p">(</span><span class="s">&#39;Property has undefined class type </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
-                            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span><span class="p">))</span>
+      <span class="k">try</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span> <span class="o">=</span> <span class="n">class_for_kind</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span><span class="p">)</span>
+      <span class="k">except</span> <span class="n">KindError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">KindError</span><span class="p">(</span><span class="s">&#39;Property has undefined class type </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span>
+                        <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span><span class="p">))</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span><span class="p">,</span> <span class="nb">type</span><span class="p">)</span> <span class="ow">and</span>
              <span class="nb">issubclass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span><span class="p">,</span> <span class="n">Model</span><span class="p">))</span> <span class="ow">or</span>
-            <span class="n">reference_class</span> <span class="ow">is</span> <span class="n">db</span><span class="o">.</span><span class="n">_SELF_REFERENCE</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span> <span class="ow">is</span> <span class="n">db</span><span class="o">.</span><span class="n">_SELF_REFERENCE</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">KindError</span><span class="p">(</span><span class="s">&#39;reference_class must be Model or _SELF_REFERENCE&#39;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_class</span><span class="p">):</span>
@@ -285,22 +545,50 @@ reference class as needed.</p>             </td>             <td class="code">  
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <h2>ReverseReferenceProperty</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-19">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-19">&#182;</a>               </div>               <p>Although I hate autogenerated reverse references, reverse references
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">return</span> <span class="nb">unicode</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">dict</span> <span class="ow">and</span> <span class="s">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span></pre></div>             </td>           </tr>                               <tr id="section-39">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-39">&#182;</a>               </div>               <p>If there is an id in this struct then we know what you meant.
+TODO: use isinstance</p>             </td>             <td class="code">               <div class="highlight"><pre>      <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">Key</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="s">&#39;id&#39;</span><span class="p">]))</span>
+    <span class="k">else</span><span class="p">:</span>
+      <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">Key</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></pre></div>             </td>           </tr>                               <tr id="section-40">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-40">&#182;</a>               </div>               <h2>ReverseReferenceProperty</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-41">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-41">&#182;</a>               </div>               <p>Although I hate autogenerated reverse references, reverse references
 themselves are pretty useful and so we make this class public and
 add support for string reference class specifiers.</p>
+
+<p>We've also added a polymorphic option that limits the collection of
+model instances returned to the specified model and its descendants.
+The original code counterintuitively returns siblings of the
+specified model along with descendants.</p>
+
+<p>Optionally, a filter function can be provided that takes a query and
+returns a query. This allows the query to be modified in arbitrary
+ways.</p>
 
 <p>Note that we derive ReverseReferenceProperty from object to avoid
 being detected as a property. The original code avoids this by
 binding the property later.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">ReverseReferenceProperty</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    
-  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">prop</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+               <span class="n">model</span><span class="p">,</span>
+               <span class="n">prop</span><span class="p">,</span>
+               <span class="n">polymorphic</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+               <span class="n">filter_function</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">__model</span> <span class="o">=</span> <span class="n">model</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">__property</span> <span class="o">=</span> <span class="n">prop</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">__polymorphic</span> <span class="o">=</span> <span class="n">polymorphic</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">__filter_function</span> <span class="o">=</span> <span class="n">filter_function</span>
 
   <span class="nd">@property</span>
   <span class="k">def</span> <span class="nf">_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Internal helper to access the model class, read-only.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__model</span><span class="p">,</span> <span class="nb">basestring</span><span class="p">):</span>
-      <span class="bp">self</span><span class="o">.</span><span class="n">__model</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">class_for_kind</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__model</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__model</span> <span class="o">=</span> <span class="n">class_for_kind</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__model</span><span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__model</span>
 
   <span class="nd">@property</span>
@@ -308,15 +596,42 @@ binding the property later.</p>             </td>             <td class="code"> 
     <span class="sd">&quot;&quot;&quot;Internal helper to access the property name, read-only.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__property</span>
 
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">_polymorphic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Internal helper to access polymorphic option, read-only.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__polymorphic</span>
+
+  <span class="nd">@property</span>
+  <span class="k">def</span> <span class="nf">_filter_function</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+      <span class="sd">&quot;&quot;&quot;Internal helper to access the filter function, read-only.&quot;&quot;&quot;</span>
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__filter_function</span>
+
   <span class="k">def</span> <span class="nf">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">model_class</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">model_instance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-      <span class="n">query</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">)</span>
-      <span class="k">return</span> <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__property</span> <span class="o">+</span> <span class="s">&#39; =&#39;</span><span class="p">,</span> <span class="n">model_instance</span><span class="o">.</span><span class="n">key</span><span class="p">())</span>
-    <span class="k">else</span><span class="p">:</span>
-      <span class="k">return</span> <span class="bp">self</span>
+    <span class="k">if</span> <span class="n">model_instance</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="n">query</span> <span class="o">=</span> <span class="n">Query</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="p">)</span>
+    <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_prop_name</span> <span class="o">+</span> <span class="s">&#39; =&#39;</span><span class="p">,</span> <span class="n">model_instance</span><span class="o">.</span><span class="n">key</span><span class="p">())</span></pre></div>             </td>           </tr>                               <tr id="section-42">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-42">&#182;</a>               </div>               <p>allow the property definition a chance to specify additional
+constraints</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_function</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_function</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_polymorphic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">polymodel</span><span class="o">.</span><span class="n">_CLASS_KEY_PROPERTY</span> <span class="o">+</span> <span class="s">&#39; =&#39;</span><span class="p">,</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">_model</span><span class="o">.</span><span class="n">class_name</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">query</span>
 
   <span class="k">def</span> <span class="nf">__property_config__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_class</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">):</span>
-      <span class="k">pass</span></pre></div>             </td>           </tr>                               <tr id="section-20">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-20">&#182;</a>               </div>               <h2>Computed Properties</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-21">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-21">&#182;</a>               </div>               <p>We provide a replacement for GAE's <code>ComputedProperty</code> that differs
+      <span class="k">pass</span></pre></div>             </td>           </tr>                               <tr id="section-43">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-43">&#182;</a>               </div>               <h2>SelfReferenceProperty</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">def</span> <span class="nf">SelfReferenceProperty</span><span class="p">(</span><span class="n">verbose_name</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">):</span>
+    <span class="k">if</span> <span class="s">&#39;reference_class&#39;</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+            <span class="s">&#39;Do not provide reference_class to self-reference.&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s">&#39;collection_name&#39;</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span>
+            <span class="s">&#39;Do not provide collection_name to self-reference&#39;</span>
+            <span class="s">&#39; when using Mora.&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ReferenceProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">_SELF_REFERENCE</span><span class="p">,</span>
+                             <span class="n">verbose_name</span><span class="p">,</span>
+                             <span class="o">**</span><span class="n">attrs</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-44">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-44">&#182;</a>               </div>               <h2>Computed Properties</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-45">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-45">&#182;</a>               </div>               <p>We provide a replacement for GAE's <code>ComputedProperty</code> that differs
 from the original in a few ways.  First, we have seperated the class
 from the decorator so that the decorator can take arguments.  These
 arguments allow us to set a return type to associate with the
@@ -341,7 +656,10 @@ encoder.</p>             </td>             <td class="code">               <div 
 
   <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">):</span>
       <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__get__</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kind</span><span class="o">.</span><span class="n">as_json</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-22">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-22">&#182;</a>               </div>               <p>We use a decorator class to return a <code>ComputedProperty</code>.  Python's
+      <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kind</span><span class="o">.</span><span class="n">as_json</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">)</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+      <span class="k">pass</span></pre></div>             </td>           </tr>                               <tr id="section-46">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-46">&#182;</a>               </div>               <p>We use a decorator class to return a <code>ComputedProperty</code>.  Python's
 documentation on how this sort of thing works is a bit weak but
 Bruce Eckel has put together a nice <a href="http://www.artima.com/weblogs/viewpost.jsp?thread=240845" title="Python Decorators II: Decorator Arguments">decorator tutorial</a> that
 demonstrates advanced decorator usage.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">computed_property</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -351,21 +669,131 @@ demonstrates advanced decorator usage.</p>             </td>             <td cla
     <span class="bp">self</span><span class="o">.</span><span class="n">indexed</span> <span class="o">=</span> <span class="n">indexed</span>
 
   <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">ComputedProperty</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">func_name</span><span class="p">,</span> <span class="n">indexed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">indexed</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-23">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-23">&#182;</a>               </div>               <h2>Models</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-24">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-24">&#182;</a>               </div>               <p>Ideally I'd like Models to be drop in replacement in the same way
+    <span class="k">return</span> <span class="n">ComputedProperty</span><span class="p">(</span><span class="n">f</span><span class="p">,</span>
+                            <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                            <span class="n">kind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+                            <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">func_name</span><span class="p">,</span>
+                            <span class="n">indexed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">indexed</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-47">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-47">&#182;</a>               </div>               <h2>Lists</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">StringListProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">StringListProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+      <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">return</span> <span class="n">value</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">property_class_for_item_type</span><span class="p">(</span><span class="n">item_type</span><span class="p">):</span>
+    <span class="n">property_type</span> <span class="o">=</span> <span class="bp">False</span>
+
+    <span class="k">if</span> <span class="n">item_type</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">([</span><span class="nb">basestring</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">unicode</span><span class="p">]):</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">StringProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">BooleanProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="o">==</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">long</span><span class="p">):</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">IntegerProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">FloatProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">Key</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">ReferenceProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">DateTimeProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">DateProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">datetime</span><span class="o">.</span><span class="n">time</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">TimeProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">Text</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">TextProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">ByteString</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">ByteStringProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">users</span><span class="o">.</span><span class="n">User</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">UserProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">Email</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">EmailProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">Blob</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">BlobProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">BlobKey</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">BlobReferenceProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">Category</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">CategoryProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">Link</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">LinkProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">GeoPt</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">GeoPtProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">IM</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">IMProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">PhoneNumber</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">PhoneNumberProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">PostalAddress</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">PostalAddressProperty</span>
+    <span class="k">elif</span> <span class="n">item_type</span> <span class="ow">is</span> <span class="n">Rating</span><span class="p">:</span>
+        <span class="n">property_type</span> <span class="o">=</span> <span class="n">RatingProperty</span>
+
+    <span class="k">return</span> <span class="n">property_type</span>
+
+
+<span class="k">class</span> <span class="nc">ListProperty</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">ListProperty</span><span class="p">):</span>
+
+  <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+      <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+
+      <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+          <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_value_for_datastore</span><span class="p">(</span><span class="n">model_instance</span><span class="p">)</span>
+
+      <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="k">return</span> <span class="p">[]</span>
+
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_type</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">long</span><span class="p">):</span>
+          <span class="n">item_type</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">long</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+          <span class="n">item_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_type</span>
+
+      <span class="n">property_type</span> <span class="o">=</span> <span class="n">property_class_for_item_type</span><span class="p">(</span><span class="n">item_type</span><span class="p">)</span>
+      <span class="n">property_type</span> <span class="o">=</span> <span class="n">property_type</span><span class="p">()</span>
+
+      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+          <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">property_type</span><span class="o">.</span><span class="n">as_json</span><span class="p">(</span><span class="bp">False</span><span class="p">,</span> <span class="n">i</span><span class="p">))</span>
+
+      <span class="k">return</span> <span class="n">result</span>
+
+  <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_instance</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">attr_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+      <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span> <span class="n">attr_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+      <span class="n">data</span> <span class="o">=</span> <span class="p">[]</span>
+
+      <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_type</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">long</span><span class="p">):</span>
+          <span class="n">item_type</span> <span class="o">=</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">long</span><span class="p">)</span>
+      <span class="k">else</span><span class="p">:</span>
+          <span class="n">item_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">item_type</span>
+
+      <span class="n">property_type</span> <span class="o">=</span> <span class="n">property_class_for_item_type</span><span class="p">(</span><span class="n">item_type</span><span class="p">)</span>
+      <span class="n">property_type</span> <span class="o">=</span> <span class="n">property_type</span><span class="p">()</span>
+
+      <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+          <span class="k">class</span> <span class="nc">Tmp</span><span class="p">():</span>
+              <span class="n">value</span> <span class="o">=</span> <span class="bp">None</span>
+          <span class="n">obj</span> <span class="o">=</span> <span class="n">Tmp</span><span class="p">()</span>
+          <span class="n">property_type</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s">&#39;value&#39;</span><span class="p">)</span>
+          <span class="n">data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+      <span class="nb">setattr</span><span class="p">(</span><span class="n">model_instance</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-48">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-48">&#182;</a>               </div>               <h2>Models</h2>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-49">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-49">&#182;</a>               </div>               <p>Ideally I'd like Models to be drop in replacement in the same way
 that types are but GAE keeps a map of model names and also does a
 several special checks such that db.Model acts differently than its
 subclasses. Building pluggable replacements is therefore difficult.
-Instead, we let Model be db.Model and then we define our own variants.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="n">Model</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Model</span></pre></div>             </td>           </tr>                               <tr id="section-25">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-25">&#182;</a>               </div>               <p>Our model variations have a lot of shared functionality that we push
+Instead, we let Model be db.Model and then we define our own variants.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="n">Model</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">Model</span></pre></div>             </td>           </tr>                               <tr id="section-50">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-50">&#182;</a>               </div>               <p>Our model variations have a lot of shared functionality that we push
 into a mixin.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">ModelMixin</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="nf">_json_dumps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_json</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="n">include</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="n">exclude</span><span class="p">))</span>
-
-    <span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_json</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">include</span><span class="p">,</span> <span class="n">exclude</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-26">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-26">&#182;</a>               </div>               <p>Most of the clever stuff happens here.  We iterate through the
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">as_json</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="n">options</span><span class="p">,</span>
+                                       <span class="n">include</span><span class="o">=</span><span class="n">include</span><span class="p">,</span>
+                                       <span class="n">exclude</span><span class="o">=</span><span class="n">exclude</span><span class="p">))</span></pre></div>             </td>           </tr>                               <tr id="section-51">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-51">&#182;</a>               </div>               <p>This returns representation of the model as a JSON string.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_to_json</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">include</span><span class="p">,</span> <span class="n">exclude</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-52">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-52">&#182;</a>               </div>               <p>Most of the clever stuff happens here.  We iterate through the
 properties checking them against the properties we should expose
 (via <code>include</code> and <code>exclude</code>).  We then call the individual
 properties' <code>as_json</code> methods to build the final representation.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
@@ -384,10 +812,13 @@ properties' <code>as_json</code> methods to build the final representation.</p> 
             <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">available_properties</span><span class="p">:</span>
                 <span class="n">p_kind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">()[</span><span class="n">p</span><span class="p">]</span>
                 <span class="n">result</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="n">p_kind</span><span class="o">.</span><span class="n">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span></pre></div>             </td>           </tr>                               <tr id="section-27">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-27">&#182;</a>               </div>               <p>Since overriding <code>as_json</code> is pretty common and calling super
+        <span class="k">return</span> <span class="n">result</span></pre></div>             </td>           </tr>                               <tr id="section-53">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-53">&#182;</a>               </div>               <p>Since overriding <code>as_json</code> is pretty common and calling super
 class methods is a pain in Python, we put the core behavior in
-<code>_as_json</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_as_json</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">include</span><span class="p">,</span> <span class="n">exclude</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-28">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-28">&#182;</a>               </div>               <p>Likewise we can extract a representation from json. TODO.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+<code>_as_json</code>.</p>
+
+<p>This builds a representation of the model as a Python 'dict' that
+can be converted to JSON.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_as_json</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">include</span><span class="p">,</span> <span class="n">exclude</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-54">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-54">&#182;</a>               </div>               <p>Likewise we can extract a representation from json. TODO.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">def</span> <span class="nf">_from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
         <span class="n">available_properties</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">include</span><span class="p">:</span>
             <span class="n">properties</span> <span class="o">=</span> <span class="n">include</span>
@@ -399,11 +830,12 @@ class methods is a pain in Python, we put the core behavior in
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">properties</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">available_properties</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+                    <span class="n">p_kind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">()[</span><span class="n">p</span><span class="p">]</span>
+                    <span class="n">p_kind</span><span class="o">.</span><span class="n">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="n">p</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">save</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_from_json</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">include</span><span class="p">,</span> <span class="n">exclude</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-29">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-29">&#182;</a>               </div>               <h2>MoraModel</h2>
+    <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{},</span> <span class="n">include</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">save</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_from_json</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">include</span><span class="p">,</span> <span class="n">exclude</span><span class="p">,</span> <span class="n">save</span><span class="p">)</span></pre></div>             </td>           </tr>                               <tr id="section-55">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-55">&#182;</a>               </div>               <h2>MoraModel</h2>
 
 <p>We use our mixin to define Mora's base model.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">MoraModel</span><span class="p">(</span><span class="n">db</span><span class="o">.</span><span class="n">Model</span><span class="p">,</span> <span class="n">ModelMixin</span><span class="p">):</span>
 
@@ -411,10 +843,12 @@ class methods is a pain in Python, we put the core behavior in
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_saved</span><span class="p">():</span>
             <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">())</span>
-        <span class="k">return</span> <span class="s">&quot;&quot;</span></pre></div>             </td>           </tr>                               <tr id="section-30">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-30">&#182;</a>               </div>               <p>We also add the method class<em>name to our base model to mirror
-the class</em>name method in Google's PolyModel class.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nd">@classmethod</span>
+        <span class="k">return</span> <span class="s">&quot;&quot;</span></pre></div>             </td>           </tr>                               <tr id="section-56">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-56">&#182;</a>               </div>               <p>We also add the method <code>class_name</code> to our base model to mirror
+the <code>class_name</code> method in Google's <code>PolyModel</code> class.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">class_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">kind</span><span class="p">()</span></pre></div>             </td>           </tr>                               <tr id="section-31">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-31">&#182;</a>               </div>               <h2>MoraPolyModel</h2>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">kind</span><span class="p">()</span></pre></div>             </td>           </tr>                               <tr id="section-57">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-57">&#182;</a>               </div>               <p>TODO: Do we need to replicate the App Engine PolyModel code with its
+metaclass voodoo or is there a simpler way to have <code>kind()</code> behave
+like it does for a vanilla App Engine PolyModel?</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-58">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-58">&#182;</a>               </div>               <h2>MoraPolyModel</h2>
 
 <p>And we also use our mixin to define Mora's base polymodel.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="k">class</span> <span class="nc">MoraPolyModel</span><span class="p">(</span><span class="n">polymodel</span><span class="o">.</span><span class="n">PolyModel</span><span class="p">,</span> <span class="n">ModelMixin</span><span class="p">):</span>
 
@@ -422,11 +856,9 @@ the class</em>name method in Google's PolyModel class.</p>             </td>    
     <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_saved</span><span class="p">():</span>
             <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key</span><span class="p">())</span>
-        <span class="k">return</span> <span class="s">&quot;&quot;</span>
-
-
-<span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
-    <span class="n">_class</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">class_for_kind</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_class</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s">&quot;&quot;</span></pre></div>             </td>           </tr>                               <tr id="section-59">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-59">&#182;</a>               </div>               <p>We also add the method <code>class_name</code> here to mirror the
+<code>class_name</code> method in Google's <code>PolyModel</code> class.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">class_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">__name__</span>
 
 </pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
